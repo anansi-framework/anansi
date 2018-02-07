@@ -195,6 +195,11 @@ if __name__ == '__main__':
             'mkdocs': mkdocs,
             'test': tox
         },
+        entry_points={
+            'console_scripts': [
+                'anansi=anansi.cli:main',
+            ],
+        },
         extras_require=extras_require,
         install_requires=install_requires,
         license='MIT',
