@@ -1,13 +1,12 @@
 language: python
 python:
-- 3.6.4
+  - 3.6.4
 script:
-- pip install virtualenv
-- python setup.py test
+  - pip install virtualenv
+  - python setup.py test
 before_deploy:
-- python setup.py tag
+  - python setup.py tag
 deploy:
-  matrix:
   - provider: pypi
     distributions: bdist_egg bdist_wheel
     user: erichulser
