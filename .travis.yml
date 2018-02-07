@@ -1,15 +1,24 @@
 language: python
 python:
-  - "3.6.4"
+- 3.6.4
 script:
-  - "pip install virtualenv"
-  - "python setup.py test"
+- pip install virtualenv
+- python setup.py test
+before_deploy:
+- python setup.py tag
 deploy:
-  - provider: script
-    script: "python setup.py release"
+  matrix:
+  - provider: pypi
+    distributions: bdist_egg bdist_wheel
+    user: erichulser
+    password:
+      secure: lytvn39onSSx6r5RBOwz/4jvMHcHD5B8RiQ8jMUQUh3O4VrVkEGHFqjFQfoLf9ngmWQUzsRc08RFX+AravWax4U8SN7GVE1SVL9Fk5Gfvb+MOASlamBsfZCQkkEusxMEehd8fQSMqGZQwGYuOn9/yaq37yIOhwyIt6fbpw8xfA+rFUy8jWfKGp9UAAOidDmaYPnZ0+VmoG4FpYYKM4iqtc1clMZVjGXF20FDkFG2NEvotYjWYXTKY2IdDgERdzA20N6mbQMHzmG9H5c5HTNARv8uzZUy4UR/ztVl9RSjx05IP6vOeYhsXrqzs4LgmG+qa4Et3AWDT5hEmF94TRhPx0yftJ0Yx7BhkF9iIOvNbwpqFWOTeIeCW5HFZpjSUH8ryR4NuHwKPCEMNxHiEHEUCj2VuSvFfjublhz1UtqyjKRYMzChBxZgSuPzMQ8D4yS93aPA4XCgOyZHsheJNJQ22bUDAmePonO285t38yh03t+thBu2URFg8y8gW5rX33EFUfWDPM4ap98tsp6kWk48b1G/kBIxwMJi3e/XESJhXuK1y+0ABiS5VZ5ol4C3udnIABBen8c8M6QAheeUW7QdFSkCqD1N76IOUy1AAReSFq7JdknMU2bCAepubRJ0KGZuu32miZ4QuhQ484N8HAO4H2zv70ePmcHUu/PY05u/5sA=
     on:
       branch: develop
-  - provider: script
-    script: "python setup.py release"
+  - provider: pypi
+    distributions: bdist_egg bdist_wheel
+    user: erichulser
+    password:
+      secure: lytvn39onSSx6r5RBOwz/4jvMHcHD5B8RiQ8jMUQUh3O4VrVkEGHFqjFQfoLf9ngmWQUzsRc08RFX+AravWax4U8SN7GVE1SVL9Fk5Gfvb+MOASlamBsfZCQkkEusxMEehd8fQSMqGZQwGYuOn9/yaq37yIOhwyIt6fbpw8xfA+rFUy8jWfKGp9UAAOidDmaYPnZ0+VmoG4FpYYKM4iqtc1clMZVjGXF20FDkFG2NEvotYjWYXTKY2IdDgERdzA20N6mbQMHzmG9H5c5HTNARv8uzZUy4UR/ztVl9RSjx05IP6vOeYhsXrqzs4LgmG+qa4Et3AWDT5hEmF94TRhPx0yftJ0Yx7BhkF9iIOvNbwpqFWOTeIeCW5HFZpjSUH8ryR4NuHwKPCEMNxHiEHEUCj2VuSvFfjublhz1UtqyjKRYMzChBxZgSuPzMQ8D4yS93aPA4XCgOyZHsheJNJQ22bUDAmePonO285t38yh03t+thBu2URFg8y8gW5rX33EFUfWDPM4ap98tsp6kWk48b1G/kBIxwMJi3e/XESJhXuK1y+0ABiS5VZ5ol4C3udnIABBen8c8M6QAheeUW7QdFSkCqD1N76IOUy1AAReSFq7JdknMU2bCAepubRJ0KGZuu32miZ4QuhQ484N8HAO4H2zv70ePmcHUu/PY05u/5sA=
     on:
       branch: master
