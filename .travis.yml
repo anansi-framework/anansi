@@ -4,3 +4,12 @@ python:
 script:
   - "pip install virtualenv"
   - "python setup.py test"
+deploy:
+  - provider: script
+    script: "python setup.py release"
+    on:
+      branch: develop
+  - provider: script
+    script: "python setup.py release"
+    on:
+      branch: master
