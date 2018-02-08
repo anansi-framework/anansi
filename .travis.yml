@@ -1,6 +1,9 @@
 language: python
 python:
 - 3.6.4
+branches:
+  except:
+    - /^v[0-9]/
 script:
 - pip install virtualenv
 - python setup.py test
@@ -8,6 +11,7 @@ before_deploy:
 - git config --local user.name "erichulser"
 - git config --local user.email "eric.hulser@gmail.com"
 - python setup.py tag --no-push
+- git push --tags
 deploy:
 - provider: releases
   skip_cleanup: true
