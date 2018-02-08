@@ -5,8 +5,17 @@ script:
   - pip install virtualenv
   - python setup.py test
 before_deploy:
-  - python setup.py tag
+  - python setup.py tag --no-push
 deploy:
+  - provider: releases
+    skip_cleanup: true
+    api_key:
+      secure: f83f4NxzeFNYpAcn/4cR8U3FBdbvO5i9Yl5D9WJA/JQBFqnowUAjl4pTsSuGVVryZc5iIGZJKyW7BMnx5P6MSNv378fnQjNMBlymXwYDxLjrItGQKjzQVMWIPD5yDrkhqYqVT/RLuF7E5Dfzn34w5qBjqlrM7OJuLPFhl0kUv4RMEjfVxKZ2x/Py8Gaf998k/w47e8WfN8LMLdDtQywHrSyc5oifHsQIHFPmTPW4jIDRB5dIpR+yCbptAZyg4xaEWTSBAlL+Lse2xpMtj9u1Gti5+lP0xwM5cNx0KMRzYQdIQimS/PXipW0NEIrdYi4PtzBm0gcKT/3NGeVYXg/EQKfDFqmJuBUneNbJVEeFND3jmBZt2z/lxCn7kn+qPO6sPaZYv9Ni4yT2J+q17NoPUC8tpSYzX0OXnIgTB8hOduMxRIscvYENdWrtFZH6pwMJdyj/DgxsprrtLv98iQ81HiVAp3rrcsv+SBw9q74KUKbtdQmy97CXTzrY8mHdR1mektyNWpwQPD/5nHRTLXuj6fZ10NjL2k9Qmz96vvE2cScTfONby80/YPns1dOq1R3OERubJdIk8cZ20NeyyQqURYeNOqtgIYH6MD3dDpu9tb4lAzSZRjCGiS6znPTUhnSbCNpcvu2rpf+pnK360u0dQMvmb0mdgg+gDt60APgwgtU=
+    file: README.md
+    on:
+      repo: anansi-framework/anansi
+      branch: develop
+
   - provider: pypi
     distributions: bdist_egg bdist_wheel
     user: erichulser
@@ -14,6 +23,16 @@ deploy:
       secure: lytvn39onSSx6r5RBOwz/4jvMHcHD5B8RiQ8jMUQUh3O4VrVkEGHFqjFQfoLf9ngmWQUzsRc08RFX+AravWax4U8SN7GVE1SVL9Fk5Gfvb+MOASlamBsfZCQkkEusxMEehd8fQSMqGZQwGYuOn9/yaq37yIOhwyIt6fbpw8xfA+rFUy8jWfKGp9UAAOidDmaYPnZ0+VmoG4FpYYKM4iqtc1clMZVjGXF20FDkFG2NEvotYjWYXTKY2IdDgERdzA20N6mbQMHzmG9H5c5HTNARv8uzZUy4UR/ztVl9RSjx05IP6vOeYhsXrqzs4LgmG+qa4Et3AWDT5hEmF94TRhPx0yftJ0Yx7BhkF9iIOvNbwpqFWOTeIeCW5HFZpjSUH8ryR4NuHwKPCEMNxHiEHEUCj2VuSvFfjublhz1UtqyjKRYMzChBxZgSuPzMQ8D4yS93aPA4XCgOyZHsheJNJQ22bUDAmePonO285t38yh03t+thBu2URFg8y8gW5rX33EFUfWDPM4ap98tsp6kWk48b1G/kBIxwMJi3e/XESJhXuK1y+0ABiS5VZ5ol4C3udnIABBen8c8M6QAheeUW7QdFSkCqD1N76IOUy1AAReSFq7JdknMU2bCAepubRJ0KGZuu32miZ4QuhQ484N8HAO4H2zv70ePmcHUu/PY05u/5sA=
     on:
       branch: develop
+
+  - provider: releases
+    api_key:
+      secure: f83f4NxzeFNYpAcn/4cR8U3FBdbvO5i9Yl5D9WJA/JQBFqnowUAjl4pTsSuGVVryZc5iIGZJKyW7BMnx5P6MSNv378fnQjNMBlymXwYDxLjrItGQKjzQVMWIPD5yDrkhqYqVT/RLuF7E5Dfzn34w5qBjqlrM7OJuLPFhl0kUv4RMEjfVxKZ2x/Py8Gaf998k/w47e8WfN8LMLdDtQywHrSyc5oifHsQIHFPmTPW4jIDRB5dIpR+yCbptAZyg4xaEWTSBAlL+Lse2xpMtj9u1Gti5+lP0xwM5cNx0KMRzYQdIQimS/PXipW0NEIrdYi4PtzBm0gcKT/3NGeVYXg/EQKfDFqmJuBUneNbJVEeFND3jmBZt2z/lxCn7kn+qPO6sPaZYv9Ni4yT2J+q17NoPUC8tpSYzX0OXnIgTB8hOduMxRIscvYENdWrtFZH6pwMJdyj/DgxsprrtLv98iQ81HiVAp3rrcsv+SBw9q74KUKbtdQmy97CXTzrY8mHdR1mektyNWpwQPD/5nHRTLXuj6fZ10NjL2k9Qmz96vvE2cScTfONby80/YPns1dOq1R3OERubJdIk8cZ20NeyyQqURYeNOqtgIYH6MD3dDpu9tb4lAzSZRjCGiS6znPTUhnSbCNpcvu2rpf+pnK360u0dQMvmb0mdgg+gDt60APgwgtU=
+    file: README.md
+    skip_cleanup: true
+    on:
+      repo: anansi-framework/anansi
+      branch: master
+
   - provider: pypi
     distributions: bdist_egg bdist_wheel
     user: erichulser

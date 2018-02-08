@@ -63,12 +63,14 @@ class tag(Command):
 
     description = 'tag the branch with the new version'
     user_options = [
-        ('no-tag', None, 'Do not tag the repo before releasing')
+        ('no-tag', None, 'Do not tag the repo before releasing'),
+        ('no-push', None, 'Do not push tags')
     ]
 
     def initialize_options(self):
         """Initialize options."""
         self.no_tag = False
+        self.no_push = False
 
     def finalize_options(self):
         """Finalize options."""
@@ -108,7 +110,8 @@ class tag(Command):
         if not self.no_tag:
             print('creating git tag:', 'v' + version)
             os.system('git tag -a v{0} -m "releasing {0}"'.format(version))
-            os.system('git push --tags')
+            if not self.no_push:
+                os.system('git push --tags')
         else:
             print('warning: tagging ignored...')
 
