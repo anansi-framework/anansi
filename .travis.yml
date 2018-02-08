@@ -15,6 +15,7 @@ deploy:
     secure: f83f4NxzeFNYpAcn/4cR8U3FBdbvO5i9Yl5D9WJA/JQBFqnowUAjl4pTsSuGVVryZc5iIGZJKyW7BMnx5P6MSNv378fnQjNMBlymXwYDxLjrItGQKjzQVMWIPD5yDrkhqYqVT/RLuF7E5Dfzn34w5qBjqlrM7OJuLPFhl0kUv4RMEjfVxKZ2x/Py8Gaf998k/w47e8WfN8LMLdDtQywHrSyc5oifHsQIHFPmTPW4jIDRB5dIpR+yCbptAZyg4xaEWTSBAlL+Lse2xpMtj9u1Gti5+lP0xwM5cNx0KMRzYQdIQimS/PXipW0NEIrdYi4PtzBm0gcKT/3NGeVYXg/EQKfDFqmJuBUneNbJVEeFND3jmBZt2z/lxCn7kn+qPO6sPaZYv9Ni4yT2J+q17NoPUC8tpSYzX0OXnIgTB8hOduMxRIscvYENdWrtFZH6pwMJdyj/DgxsprrtLv98iQ81HiVAp3rrcsv+SBw9q74KUKbtdQmy97CXTzrY8mHdR1mektyNWpwQPD/5nHRTLXuj6fZ10NjL2k9Qmz96vvE2cScTfONby80/YPns1dOq1R3OERubJdIk8cZ20NeyyQqURYeNOqtgIYH6MD3dDpu9tb4lAzSZRjCGiS6znPTUhnSbCNpcvu2rpf+pnK360u0dQMvmb0mdgg+gDt60APgwgtU=
   file: README.md
   on:
+    tags: false
     repo: anansi-framework/anansi
     all_branches: true
     conditional: branch IN (develop, master)
@@ -25,5 +26,6 @@ deploy:
   password:
     secure: yRMea7+up30pjMQi/pP7QpvzvXzO4dRcT5lAoBrhvUfFCJLaNVi0ENQNyeBg5z1Q/GMu6DlRh3jzISCt1/z593lqYpDn2B1ssK6kav/M/QpA+SAQ9krI26fIKyhkvfeSCNk0GmQmwDgoWMzJDb5/VIv7UnlhtsoqdahvVzz0aINhW2E/ViD96VN3JqJHjnNP3E4PO/2Di9T9o1lRFa7bykPuthIr/8ZkReMCpqE9147iaU7/yBT//aHoiPaMIp7ulhojoekEyp3IQ6IB5l14/w/+f5C8zxnRDx0nM97rh7DYqpPOmxG0RVi4bKwv5HMKgwpnQ+6cEE7DVFvAWoHFrh7WibEE6OeNkcYbSQd93iGcN6PGlmZIupmbWDw+6ZpwYd4duRJYp9jr8OiQir/4d/AvxLyBnx5Z35y2DNPY9LCiE8wo5E4yqnHwinD0goYjUyippqHOJGcIFrw1qdJ8zP7srmvIt818RO43wO2SWyfXYHN0IUnV0XNAfvI03QGLNowydXGOk1BkFxbMQppe3AuRFUZLMyKmsZwS57oeGn/hM/EWKQA227oTpY6yvAX0jU71C+sVCOPy/H8AgG6p4oFxO4tuPbgn5URIKaGFWvH5Urrhko9rmwxEJxF/MFhkxl9rd2r/6793xXVCM0AZfXUBS3gLUFFGf9E6j4izDkc=
   on:
+    tags: false
     all_branches: true
     conditional: branch IN (develop, master)
