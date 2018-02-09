@@ -38,7 +38,7 @@ class Context:
         limit: int=None,
         locale: str=DEFAULT_LOCALE,
         namespace: str=None,
-        order: list=None,
+        order_by: list=None,
         page_size: int=None,
         page: int=None,
         returning: ReturnType=ReturnType.Records,
@@ -58,7 +58,7 @@ class Context:
         self.include = include or dot({})
         self.locale = locale
         self.namespace = namespace
-        self.order = order
+        self.order_by = order_by
         self.page = page
         self.page_size = page_size
         self.returning = returning
@@ -172,21 +172,21 @@ def _merge_namespace(options: dict, base_context: Context) -> str:
         return base_context.namespace if base_context else None
 
 
-def _merge_order(options: dict, base_context: Context) -> list:
-    """Return new order based on input and context."""
+def _merge_order_by(options: dict, base_context: Context) -> list:
+    """Return new order_by based on input and context."""
     try:
-        order = options['order']
+        order_by = options['order_by']
     except KeyError:
-        order = base_context.order if base_context else None
+        order_by = base_context.order_by if base_context else None
     else:
-        if type(order) is str:
-            order = [
+        if type(order_by) is str:
+            order_by = [
                 (
                     part.strip('+-'),
                     Ordering.Desc if part.startswith('-') else Ordering.Asc
-                ) for part in order.split(',')
+                ) for part in order_by.split(',')
             ]
-    return order
+    return order_by
 
 
 def _merge_page(options: dict, base_context: Context) -> int:
@@ -220,9 +220,13 @@ def _merge_query(options: dict, base_context: Context) -> 'Query':
 def _merge_returning(options: dict, base_context: Context) -> ReturnType:
     """Return new returning based on input and context."""
     try:
-        return options['returning']
+        returning = options['returning']
     except KeyError:
         return base_context.returning if base_context else ReturnType.Records
+    else:
+        if type(returning) is str:
+            return ReturnType(returning)
+        return returning
 
 
 def _merge_scope(options: dict, base_context: Context) -> dict:
@@ -285,7 +289,7 @@ def make_context(**options) -> Context:
         limit=_merge_limit(options, base_context),
         locale=_merge_locale(options, base_context),
         namespace=_merge_namespace(options, base_context),
-        order=_merge_order(options, base_context),
+        order_by=_merge_order_by(options, base_context),
         page_size=_merge_page_size(options, base_context),
         page=_merge_page(options, base_context),
         returning=_merge_returning(options, base_context),
@@ -326,9 +330,9 @@ def resolve_namespace(
     return default
 
 
-def reverse_order(order: list) -> list:
+def reverse_order(order_by: list) -> list:
     """Reverse ordering by switching ascending and descending."""
     return [
         (x[0], Ordering.Asc if x[1] is Ordering.Desc else Ordering.Desc)
-        for x in order
+        for x in order_by
     ]

@@ -4,9 +4,9 @@ from typing import List, Type
 from aiohttp.web import json_response
 
 from .utils import (
+    dump_collection,
+    dump_model,
     make_context_from_request,
-    serialize_collection,
-    serialize_model,
 )
 
 
@@ -27,9 +27,9 @@ def delete_record(model: Type['Model']):
 def get_records(model: Type['Model']):
     """Handle GET requests on a model endpoint."""
     async def handler(request):
-        context = await make_context_from_request(request)
+        context = make_context_from_request(request)
         records = model.select(context=context)
-        response = await serialize_collection(records)
+        response = await dump_collection(records)
         return json_response(response)
     return handler
 
@@ -41,9 +41,9 @@ def get_record(model: Type['Model']):
         if key.isdigit():
             key = int(key)
 
-        context = await make_context_from_request(request)
+        context = make_context_from_request(request)
         record = await model.fetch(key, context=context)
-        response = await serialize_model(record)
+        response = await dump_model(record)
         return json_response(response)
     return handler
 

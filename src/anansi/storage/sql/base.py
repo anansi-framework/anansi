@@ -321,7 +321,7 @@ class AbstractSql(AbstractStorage, metaclass=ABCMeta):
         )
         order = order_to_sql(
             model,
-            context.order,
+            context.order_by,
             order_map=self.order_map,
             quote=self.quote
         )

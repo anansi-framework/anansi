@@ -146,7 +146,7 @@ class Collection:
             model = self.model
             first_context = make_context(
                 context=context,
-                order=context.order or model.__schema__.default_order,
+                order_by=context.order_by or model.__schema__.default_order,
                 limit=1
             )
             store_records = await self.context.store.get_records(
@@ -179,8 +179,8 @@ class Collection:
             context = self.context
             last_context = make_context(
                 limit=1,
-                order=reverse_order(
-                    context.order or
+                order_by=reverse_order(
+                    context.order_by or
                     model.__schema__.default_order
                 ),
                 context=context

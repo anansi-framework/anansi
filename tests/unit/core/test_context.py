@@ -13,7 +13,7 @@ def test_context_creation():
     assert context.locale is DEFAULT_LOCALE
     assert context.limit is None
     assert context.namespace is None
-    assert context.order is None
+    assert context.order_by is None
     assert context.page is None
     assert context.page_size is None
     assert context.where is None
@@ -37,7 +37,7 @@ def test_context_merging():
         fields='a,b',
         locale='en_US',
         limit=5,
-        order='+a,-b',
+        order_by='+a,-b',
         scope={'a': 1},
         where=Q('a') == 1,
     )
@@ -51,7 +51,7 @@ def test_context_merging():
         where=Q('b') != 1,
     )
 
-    assert b.order == [('a', Ordering.Asc), ('b', Ordering.Desc)]
+    assert b.order_by == [('a', Ordering.Asc), ('b', Ordering.Desc)]
     assert b.fields == ['b', 'c', 'd', 'a']
     assert b.scope == {'a': 1, 'b': 2}
     assert type(b.where) == QueryGroup
