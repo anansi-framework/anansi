@@ -1,7 +1,7 @@
 """Define Model class."""
 
 from collections import OrderedDict
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, Union
 import asyncio
 
 from ..actions import FetchRecord
@@ -10,6 +10,7 @@ from ..exceptions import (
     FieldNotFound,
     ReferenceNotFound,
 )
+from ..utils import is_equal
 from .collector import Collector
 from .collection import Collection
 from .context import ReturnType, make_context
@@ -268,7 +269,7 @@ class Model(metaclass=ModelType):
                 self._references[field_key] = value
             elif isinstance(schema_object, Collection):
                 self._collections[field_key] = value
-            elif self._state.get(field_key) is not value:
+            elif not is_equal(self._state.get(field_key), value):
                 self._changes[field_key] = value
             else:
                 self._changes.pop(field_key, None)
@@ -288,31 +289,26 @@ class Model(metaclass=ModelType):
             return record
 
     @classmethod
+    async def ensure_exists(
+        cls,
+        values: dict,
+        defaults: dict=None,
+        **context,
+    ) -> 'Model':
+        """Find or create a model with the given values."""
+        record = await cls.fetch(values, **context)
+        if not record:
+            data = {}
+            data.update(defaults or {})
+            data.update(values)
+            record = cls(state=data)
+            await record.save()
+        return record
+
+    @classmethod
     async def fetch(cls, key: Any, **context) -> FetchRecord:
         """Fetch a single record from the store for the given key."""
-        from .query import Query as Q
-
-        q = Q()
-        key_fields = cls.__schema__.key_fields
-        if type(key) in (list, tuple):
-            if len(key) != len(key_fields):
-                raise RuntimeError('Invalid key provided.')
-            for i, field in key_fields:
-                q &= Q(field.name) == key[i]
-
-        elif type(key) is dict:
-            for field, value in key.items():
-                q &= Q(field.name) == value
-
-        else:
-            if len(key_fields) == 1:
-                q |= Q(key_fields[0].name) == key
-
-            for field in cls.__schema__.fields.values():
-                if field.test_flag(field.Flags.Keyable):
-                    q |= Q(field.name) == key
-
-        context['where'] = q & context.get('where')
+        context['where'] = cls.make_query(key) & context.get('where')
         context['limit'] = 1
         context.setdefault('store', cls.__store__)
         fetch_context = make_context(**context)
@@ -324,6 +320,48 @@ class Model(metaclass=ModelType):
         if fetch_context.returning == ReturnType.Records:
             return cls(state=record_data)
         return record_data
+
+    @classmethod
+    def make_query(cls, key: Any) -> 'Query':
+        """Create query for the key."""
+        from .query import make_query_from_dict
+
+        if type(key) is dict:
+            return make_query_from_dict(key)
+        elif type(key) not in (list, tuple):
+            return cls.make_keyable_query(key)
+        else:
+            return cls.make_key_query(key)
+
+    @classmethod
+    def make_key_query(cls, values: Union[list, tuple]) -> 'Query':
+        """Generate query for specific key of this model."""
+        from .query import Query
+
+        key_fields = cls.__schema__.key_fields
+        if len(values) != len(key_fields):
+            raise RuntimeError('Invalid key provided.')
+
+        q = Query()
+        for i, field in key_fields:
+            q &= Query(field.name) == values[i]
+        return q
+
+    @classmethod
+    def make_keyable_query(cls, value: Any) -> 'Query':
+        """Generate query for all keyable fields of this model."""
+        from .query import Query
+
+        key_fields = cls.__schema__.key_fields
+
+        q = Query()
+        if len(key_fields) == 1:
+            q |= Query(key_fields[0].name) == value
+
+        for field in cls.__schema__.fields.values():
+            if field.test_flag(field.Flags.Keyable):
+                q |= Query(field.name) == value
+        return q
 
     @classmethod
     def select(cls, **context) -> Collection:

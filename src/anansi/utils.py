@@ -1,6 +1,15 @@
 """Defines a variety of helper functions."""
 
 from enum import Flag
+from typing import Any
+
+BASIC_TYPES = {
+    bool,
+    bytes,
+    float,
+    int,
+    str,
+}
 
 
 def enum_from_set(flags: Flag, options: set) -> Flag:
@@ -23,3 +32,10 @@ def enum_from_set(flags: Flag, options: set) -> Flag:
     for option in options:
         out |= getattr(flags, option)
     return out
+
+
+def is_equal(a: Any, b: Any) -> bool:
+    """Return whether or not a and b are equal by equality and identity."""
+    if type(a) is type(b) and type(a) in BASIC_TYPES:
+        return a == b
+    return a is b

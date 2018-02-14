@@ -279,7 +279,7 @@ def make_records(
     if context.returning == ReturnType.Records:
         model_context = make_record_context(context=context)
         return [
-            model(state=record, context=model_context)
+            model(state=dict(record), context=model_context)
             for record in store_records
         ]
     return [dict(record) for record in store_records]
