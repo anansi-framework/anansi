@@ -308,7 +308,7 @@ class Model(metaclass=ModelType):
     @classmethod
     async def fetch(cls, key: Any, **context) -> FetchRecord:
         """Fetch a single record from the store for the given key."""
-        context['where'] = cls.make_query(key) & context.get('where')
+        context['where'] = cls.make_fetch_query(key) & context.get('where')
         context['limit'] = 1
         context.setdefault('store', cls.__store__)
         fetch_context = make_context(**context)
@@ -322,7 +322,7 @@ class Model(metaclass=ModelType):
         return record_data
 
     @classmethod
-    def make_query(cls, key: Any) -> 'Query':
+    def make_fetch_query(cls, key: Any) -> 'Query':
         """Create query for the key."""
         from .query import make_query_from_dict
 

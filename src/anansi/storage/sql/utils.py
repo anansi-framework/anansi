@@ -77,6 +77,23 @@ def changes_to_sql(
     return column_str, value_str, values
 
 
+def updates_to_sql(
+    changes: Dict[Union['Field', str], Any],
+    quote: str=DEFAULT_QUOTE,
+    offset: int=0
+) -> Tuple[str, list]:
+    """Create change statements in sql."""
+    updates = ',\n'.join(
+        '{0}{1}{0}={2}'.format(
+            quote,
+            getattr(field, 'code', field),
+            getattr(value, 'literal_value', '${}'.format(i + 1 + offset)),
+        )
+        for i, (field, value) in enumerate(changes.items())
+    )
+    return updates, list(changes.values())
+
+
 def group_changes(record: 'Model') -> Tuple[dict, dict]:
     """Group changes into standard and translatable fields."""
     standard = OrderedDict()
