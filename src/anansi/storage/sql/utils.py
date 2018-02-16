@@ -133,13 +133,11 @@ def fields_to_sql(
         else:
             key = '{prefix}{q}{code}{q}'
 
+        is_i18n = field.test_flag(field.Flags.Translatable)
         columns.append(key.format(
-            code=field.code,
+            code=field.i18n_code if is_i18n else field.code,
             name=field.name,
-            prefix=(
-                'i18n.' if field.test_flag(field.Flags.Translatable)
-                else ''
-            ),
+            prefix='i18n.' if is_i18n else '',
             q=quote,
         ))
 

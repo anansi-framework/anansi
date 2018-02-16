@@ -302,7 +302,11 @@ class AbstractSql(AbstractStorage, metaclass=ABCMeta):
         else:
             distinct = ''
 
-        if schema.has_translations:
+        has_translations = any(
+            field.test_flag(field.Flags.Translatable)
+            for field in fields
+        )
+        if has_translations:
             i18n_join = (
                 'LEFT JOIN {q}{namespace}{q}.{q}{table}{q} i18n '
                 'ON ({columns})'
@@ -310,7 +314,10 @@ class AbstractSql(AbstractStorage, metaclass=ABCMeta):
 
             values.append(context.locale)
             i18n_columns = ' AND '.join(
-                'i18n.{0}{1}{0} = {0}{1}{0}'.format(self.quote, field.code)
+                'i18n.{0}{1}{0} = {0}{1}{0}'.format(
+                    self.quote,
+                    field.i18n_code
+                )
                 for field in schema.key_fields
             )
             i18n_columns += ' AND i18n.{0}locale{0} = $1'.format(self.quote)

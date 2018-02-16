@@ -20,6 +20,7 @@ def add_resource(
     model: Type['Model'],
     *,
     context_factory: Callable=None,
+    dumps: Callable=None,
     path: str=None,
     permits: dict=None,
 ):
@@ -31,6 +32,7 @@ def add_resource(
         app,
         model,
         context_factory=context_factory,
+        dumps=dumps,
         path=record_path,
         permits=permits,
     )
@@ -38,6 +40,7 @@ def add_resource(
         app,
         model,
         context_factory=context_factory,
+        dumps=dumps,
         path=model_path,
         permits=permits,
     )
@@ -48,6 +51,7 @@ def add_model_resource(
     model: Type['Model'],
     *,
     context_factory: Callable=None,
+    dumps: Callable=None,
     path: str=None,
     permits: dict=None,
 ):
@@ -59,21 +63,25 @@ def add_model_resource(
     resource.add_route('GET', get_records(
         model,
         context_factory=context_factory,
+        dumps=dumps,
         permit=permits.get('GET')
     ))
     resource.add_route('POST', create_record(
         model,
         context_factory=context_factory,
+        dumps=dumps,
         permit=permits.get('POST')
     ))
     resource.add_route('PATCH', update_records(
         model,
         context_factory=context_factory,
+        dumps=dumps,
         permit=permits.get('PATCH'),
     ))
     resource.add_route('PUT', update_records(
         model,
         context_factory=context_factory,
+        dumps=dumps,
         permit=permits.get('PUT'),
     ))
 
@@ -85,6 +93,7 @@ def add_record_resource(
     model: Type['Model'],
     *,
     context_factory: Callable=None,
+    dumps: Callable=None,
     path: str=None,
     permits: dict=None,
 ):
@@ -96,21 +105,25 @@ def add_record_resource(
     resource.add_route('DELETE', delete_record(
         model,
         context_factory=context_factory,
+        dumps=dumps,
         permit=permits.get('DELETE'),
     ))
     resource.add_route('GET', get_record(
         model,
         context_factory=context_factory,
+        dumps=dumps,
         permit=permits.get('GET'),
     ))
     resource.add_route('PATCH', update_record(
         model,
         context_factory=context_factory,
+        dumps=dumps,
         permit=permits.get('PATCH'),
     ))
     resource.add_route('PUT', update_record(
         model,
         context_factory=context_factory,
+        dumps=dumps,
         permit=permits.get('PUT')
     ))
 
