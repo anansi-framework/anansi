@@ -120,3 +120,14 @@ class Query:
         self._model = model
 
     model = property(get_model, set_model)
+
+
+def make_query_from_dict(values: dict) -> Query:
+    """Make a query from the given values."""
+    q = Query()
+    for field, value in values.items():
+        if type(field) is str:
+            q &= Query(field) == value
+        else:
+            q &= Query(field.name) == value
+    return q

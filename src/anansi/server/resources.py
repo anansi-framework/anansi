@@ -1,13 +1,18 @@
 """Define Model resource endpoints."""
+import logging
 from typing import List, Type
 
 from aiohttp.web import json_response
 
 from .utils import (
+    assert_permitted,
     dump_collection,
     dump_model,
+    error_response,
     make_context_from_request,
 )
+
+log = logging.getLogger(__name__)
 
 
 def batch_records(model: Type['Model']):
@@ -27,24 +32,39 @@ def delete_record(model: Type['Model']):
 def get_records(model: Type['Model']):
     """Handle GET requests on a model endpoint."""
     async def handler(request):
-        context = make_context_from_request(request)
-        records = model.select(context=context)
-        response = await dump_collection(records)
-        return json_response(response)
+        try:
+            context = make_context_from_request(request)
+            permission = '{}.get.*'.format(model.__schema__.name)
+            await assert_permitted(request, permission, context=context)
+            records = model.select(context=context)
+            response = await dump_collection(records)
+            return json_response(response)
+        except Exception as e:
+            log.exception('Failed: %s', request.path)
+            return error_response(e)
     return handler
 
 
 def get_record(model: Type['Model']):
     """Handle GET requests on a model endpoint by it's key."""
     async def handler(request):
-        key = request.match_info['key']
-        if key.isdigit():
-            key = int(key)
+        try:
+            key = request.match_info['key']
+            if key.isdigit():
+                key = int(key)
 
-        context = make_context_from_request(request)
-        record = await model.fetch(key, context=context)
-        response = await dump_model(record)
-        return json_response(response)
+            context = make_context_from_request(request)
+            permission = '{}.get.{}'.format(
+                model.__schema__.name,
+                key,
+            )
+            await assert_permitted(request, permission, context=context)
+            record = await model.fetch(key, context=context)
+            response = await dump_model(record)
+            return json_response(response)
+        except Exception as e:
+            log.exception('Failed: GET %s', request.path)
+            return error_response(e)
     return handler
 
 
