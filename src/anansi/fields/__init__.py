@@ -9,7 +9,9 @@ from .datetimes import (  # noqa: F401
     Time,
 )
 from .numbers import (  # noqa: F401
+    Float,
     Integer,
+    Serial,
 )
 from .strings import (  # noqa: F401
     Regex,

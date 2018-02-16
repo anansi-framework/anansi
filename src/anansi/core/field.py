@@ -41,6 +41,7 @@ class Field:
         default: Any=None,
         flags: Union[FieldFlags, set]=FieldFlags(0),
         gettermethod: callable=None,
+        i18n_code: str='',
         label: str='',
         name: str='',
         querymethod: callable=None,
@@ -65,6 +66,7 @@ class Field:
 
         self._code = code
         self._default = default
+        self._i18n_code = i18n_code
         self._label = label
 
     def __lt__(self, other) -> int:
@@ -102,6 +104,16 @@ class Field:
         if callable(self._default):
             return self._default(self)
         return self._default
+
+    def get_i18n_code(self) -> str:
+        """Return code to use with translation tables.
+
+        If no code is defined, then the normal
+        field code will be returned.
+        """
+        if self._i18n_code:
+            return self._i18n_code
+        return self.code
 
     def get_label(self) -> str:
         """Return display text label.
@@ -145,6 +157,10 @@ class Field:
         """Set the default value for this field."""
         self._default = default
 
+    def set_i18n_code(self, code: str):
+        """Set the code used for this field on translation tables."""
+        self._i18n_code = code
+
     def set_label(self, label: str):
         """Set display text label."""
         self._label = label
@@ -166,5 +182,6 @@ class Field:
     code = property(get_code, set_code)
     default = property(get_default, set_default)
     label = property(get_label, set_label)
+    i18n_code = property(get_i18n_code, set_i18n_code)
     refers_to_model = property(get_refers_to_model)
     refers_to_field = property(get_refers_to_field)
