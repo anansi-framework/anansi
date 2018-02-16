@@ -3,6 +3,7 @@ import argparse
 import inspect
 import json
 import sys
+import yaml
 
 from anansi import __version__
 
@@ -115,8 +116,12 @@ def serve(
     from anansi.server import serve
 
     if config:
-        with open(config, 'r') as f:
-            conf = json.load(f)
+        if config.endswith('.json'):
+            with open(config, 'r') as f:
+                conf = json.load(f)
+        elif config.endswith('.yaml'):
+            with open(config, 'r') as f:
+                conf = yaml.load(f.read())
     else:
         conf = None
 

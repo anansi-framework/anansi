@@ -1,2 +1,3 @@
 dotted
 inflection
+pyyaml

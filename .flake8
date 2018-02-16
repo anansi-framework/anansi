@@ -4,3 +4,4 @@ ignore=
   H238  # old style class (not applicable in py3)
   H301  # one import per line
   H306  # alphabetical import (using I100 from flake8-import-order plugin instead)
+  I201  # spacing between imports
