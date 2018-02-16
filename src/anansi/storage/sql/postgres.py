@@ -158,7 +158,11 @@ class Postgres(AbstractSql):
             async with pool.acquire() as conn:
                 async with conn.transaction():
                     func = getattr(conn, method)
-                    return await func(sql, *args)
+                    try:
+                        return await func(sql, *args)
+                    except Exception:
+                        log.exception(sql)
+                        raise
 
     async def get_pool(self):
         """Return the connection pool for this backend."""

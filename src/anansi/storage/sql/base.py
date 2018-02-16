@@ -20,7 +20,8 @@ from .utils import (
     fields_to_sql,
     group_changes,
     order_to_sql,
-    query_to_sql
+    query_to_sql,
+    updates_to_sql,
 )
 
 
@@ -353,3 +354,79 @@ class AbstractSql(AbstractStorage, metaclass=ABCMeta):
             return await self.create_record(record, context)
         else:
             return await self.update_record(record, context)
+
+    async def update_record(self, record: 'Model', context: 'Context') -> dict:
+        """Insert new record into the database."""
+        standard_changes, i18n_changes = group_changes(record)
+        if i18n_changes:
+            return await self.update_i18n_record(
+                record,
+                context,
+                standard_changes,
+                i18n_changes
+            )
+        else:
+            return await self.update_standard_record(
+                record,
+                context,
+                standard_changes
+            )
+
+    async def update_i18n_record(
+        self,
+        record: 'Model',
+        context: 'Context',
+        standard_changes: dict,
+        i18n_changes: dict
+    ) -> dict:
+        """Create new database record that has translatable fields."""
+        raise NotImplementedError
+
+    async def update_standard_record(
+        self,
+        record: 'Model',
+        context: 'Context',
+        changes: dict
+    ) -> dict:
+        """Create a standard record in the database."""
+        schema = record.__schema__
+        sql = (
+            'UPDATE {q}{namespace}{q}.{q}{table}{q} SET \n'
+            '   {updates}\n'
+            'WHERE {query};'
+        )
+
+        update_str, values = updates_to_sql(
+            changes,
+            quote=self.quote
+        )
+        where = record.make_fetch_query(await record.get_key())
+        query_str = await query_to_sql(
+            self,
+            type(record),
+            where,
+            context,
+            quote=self.quote,
+            op_map=self.op_map,
+            values=values
+        )
+
+        statement = sql.format(
+            namespace=resolve_namespace(
+                schema,
+                context,
+                default=self.default_namespace
+            ),
+            q=self.quote,
+            query=query_str,
+            table=schema.resource_name,
+            updates=update_str,
+        )
+        results = await self.execute(
+            statement,
+            *values,
+            method='fetch',
+            connection=context.connection,
+        )
+
+        return results[0] if results else {}
