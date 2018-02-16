@@ -587,15 +587,15 @@ async def test_model_create_view_read_only():
         await UserView.create({'username': 'jdoe'})
 
 
-def test_model_select_collection():
+@pytest.mark.asyncio
+async def test_model_select_collection():
     """Test selecting a collection from a model."""
     from anansi import Model, Field, Query as Q
 
     class User(Model):
         id = Field()
 
-    coll = User.select(where=Q('id') == 1)
-
+    coll = await User.select(where=Q('id') == 1)
     assert coll.model is User
     assert coll.context.where.left == 'id'
     assert coll.context.where.right == 1

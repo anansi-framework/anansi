@@ -47,7 +47,7 @@ def import_plugins(
     for plugin in plugins:
         if plugin:
             module = importlib.import_module(plugin)
-            module.includeme(app)
+            module.setup(app)
 
 
 def serve(
