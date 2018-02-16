@@ -291,13 +291,16 @@ class AbstractSql(AbstractStorage, metaclass=ABCMeta):
                 quote=self.quote
             )
 
-        if context.distinct:
-            distinct = [
+        if type(context.distinct) is set:
+            distinct_columns = [
                 '{0}{1}{0}'.format(self.quote, schema[field].code)
                 for field in context.distinct
             ]
+            distinct = 'DISTINCT ON ({}) '.format(', '.join(distinct_columns))
+        elif context.distinct is True:
+            distinct = 'DISTINCT '
         else:
-            distinct = []
+            distinct = ''
 
         if schema.has_translations:
             i18n_join = (
@@ -337,10 +340,7 @@ class AbstractSql(AbstractStorage, metaclass=ABCMeta):
 
         statement = sql.format(
             columns=', '.join(columns),
-            distinct=(
-                'DISTINCT ON ({})'.format(', '.join(distinct))
-                if distinct else ''
-            ),
+            distinct=distinct,
             joins='{}\n'.format('\n'.join(joins)) if joins else '',
             limit='LIMIT {}\n'.format(context.limit) if context.limit else '',
             namespace=namespace,
