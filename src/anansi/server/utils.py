@@ -112,7 +112,7 @@ def load_param(param: str) -> Any:
         return param
 
 
-def make_context_from_request(request: 'aiohttp.web.Request') -> Context:
+async def make_context_from_request(request: 'aiohttp.web.Request') -> Context:
     """Make new context from a request."""
     get_params = dict(request.GET)
     param_context = {

@@ -18,6 +18,8 @@ log = logging.getLogger(__name__)
 def add_resource(
     app: 'aiohttp.UrlDispatcher',
     model: Type['Model'],
+    *,
+    context_factory: Callable=None,
     path: str=None,
     permits: dict=None,
 ):
@@ -25,8 +27,20 @@ def add_resource(
     model_path = path or '/{}'.format(model.__schema__.resource_name)
     record_path = '{}/{{key}}'.format(model_path)
 
-    add_record_resource(app, model, path=record_path, permits=permits)
-    add_model_resource(app, model, path=model_path, permits=permits)
+    add_record_resource(
+        app,
+        model,
+        context_factory=context_factory,
+        path=record_path,
+        permits=permits,
+    )
+    add_model_resource(
+        app,
+        model,
+        context_factory=context_factory,
+        path=model_path,
+        permits=permits,
+    )
 
 
 def add_model_resource(
