@@ -337,7 +337,10 @@ class AbstractSql(AbstractStorage, metaclass=ABCMeta):
 
         statement = sql.format(
             columns=', '.join(columns),
-            distinct='DISTINCT ON ({})'.format(', '.join(distinct)),
+            distinct=(
+                'DISTINCT ON ({})'.format(', '.join(distinct))
+                if distinct else ''
+            ),
             joins='{}\n'.format('\n'.join(joins)) if joins else '',
             limit='LIMIT {}\n'.format(context.limit) if context.limit else '',
             namespace=namespace,
