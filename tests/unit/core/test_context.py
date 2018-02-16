@@ -56,7 +56,7 @@ def test_context_merging():
     assert b.scope == {'a': 1, 'b': 2}
     assert type(b.where) == QueryGroup
     assert len(b.where.queries) == 2
-    assert b.distinct == ['b']
+    assert b.distinct == {'a', 'b'}
     assert b.locale == 'fr_FR'
     assert b.limit is None
 
