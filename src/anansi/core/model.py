@@ -364,7 +364,7 @@ class Model(metaclass=ModelType):
         return q
 
     @classmethod
-    def select(cls, **context) -> Collection:
+    async def select(cls, **context) -> Collection:
         """Lookup a collection of records from the store."""
         context.setdefault('store', cls.__store__)
         return Collection(

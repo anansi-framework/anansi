@@ -143,7 +143,7 @@ async def get_records(
     context: 'orb.Context'=None,
 ) -> list:
     """Handle GET endpoint for models."""
-    collection = model.select(context=context)
+    collection = await model.select(context=context)
     return await dump_collection(collection)
 
 
@@ -175,6 +175,6 @@ async def update_records(
         context.scope['request'],
         model,
     )
-    collection = model.select(context=context)
+    collection = await model.select(context=context)
     await collection.update(values)
     return await dump_collection(collection)

@@ -57,7 +57,7 @@ class Collector:
         q = None
 
         if self.through:
-            records = self.through_model.select(
+            collection = await self.through_model.select(
                 fields=self.target,
                 where=Q(self.source) == record
             )
@@ -67,7 +67,7 @@ class Collector:
                 if len(keys) > 1 else
                 keys[0].code
             )
-            q = Q(key).is_in(records)
+            q = Q(key).is_in(collection)
 
         elif self.source:
             q = Q(self.source) == record

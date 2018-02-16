@@ -357,7 +357,7 @@ async def test_sql_get_record_by_key_index(mock_sql_storage, name, engine):
 
     store, mock = mock_sql_storage(engine, side_effect=execute)
     with store:
-        all_users = User.select()
+        all_users = await User.select()
         u = await all_users.get_first()
         mock.assert_called_with(
             engine.GET_RECORD_BY_KEY_INDEX.format(
@@ -433,7 +433,8 @@ async def test_sql_get_record_count(
 
     store, mock = mock_sql_storage(engine, side_effect=execute)
     with store:
-        count = await User.select().get_count()
+        collection = await User.select()
+        count = await collection.get_count()
         mock.assert_called_with(
             engine.GET_RECORD_COUNT.format(
                 namespace=store.storage.default_namespace,
@@ -466,7 +467,8 @@ async def test_sql_get_filtered_record_count(
     with store:
         a = Query('username') == 'john.doe'
         b = Query('username') == 'jane.doe'
-        count = await User.select(where=a | b).get_count()
+        users = await User.select(where=a | b)
+        count = await users.get_count()
         mock.assert_called_with(
             engine.GET_FILTERED_RECORD_COUNT.format(
                 column='username',
@@ -497,7 +499,7 @@ async def test_sql_get_first_record(mock_sql_storage, name, engine):
 
     store, mock = mock_sql_storage(engine, side_effect=execute)
     with store:
-        all_users = User.select()
+        all_users = await User.select()
         u = await all_users.get_first()
         mock.assert_called_with(
             engine.GET_FIRST_RECORD_BY_KEY_FIELD.format(
@@ -532,7 +534,7 @@ async def test_sql_get_last_record(mock_sql_storage, name, engine):
 
     store, mock = mock_sql_storage(engine, side_effect=execute)
     with store:
-        all_users = User.select()
+        all_users = await User.select()
         u = await all_users.get_last()
         mock.assert_called_with(
             engine.GET_LAST_RECORD_BY_KEY_FIELD.format(
