@@ -31,7 +31,7 @@ class Context:
         self,
         *,
         connection: Any=None,
-        distinct: list=None,
+        distinct: Union[bool, set]=None,
         fields: list=None,
         force_namespace: bool=False,
         include: 'DottedDict'=None,
@@ -121,14 +121,26 @@ def _merge_include(options: dict, base_context: Context) -> 'DottedDict':
 
 def _merge_distinct(options: dict, base_context: Context) -> list:
     """Return distinct joined from option and base context."""
-    try:
-        distinct = options['distinct']
-    except KeyError:
-        distinct = base_context.distinct if base_context else None
-    else:
-        if type(distinct) is str:
-            distinct = distinct.split(',')
-    return distinct
+    base_distinct = base_context.distinct if base_context else None
+    option_distinct = options.get('distinct')
+
+    if type(option_distinct) is str:
+        option_distinct = set(option_distinct.split(','))
+    elif option_distinct and type(option_distinct) not in (bool, set):
+        option_distinct = set(option_distinct)
+
+    if not (option_distinct or base_distinct):
+        return None
+    elif not option_distinct:
+        return base_distinct
+    elif not base_distinct:
+        return option_distinct
+    elif base_distinct is True:
+        return option_distinct
+    elif option_distinct is True:
+        return base_distinct
+
+    return base_distinct | option_distinct
 
 
 def _merge_fields(options: dict, base_context: Context) -> list:

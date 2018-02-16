@@ -82,14 +82,30 @@ class Collection:
         delete_context = make_context(**context)
         return await self.context.store.delete_collection(self, delete_context)
 
-    async def distinct(self, *keys, default: Any=None) -> set:
+    async def distinct(self, *keys, default: Any=None, **context) -> set:
         """Return distinct values for the given fields."""
-        if not self._records:
-            await self.get_records()  # TODO(replace with backend distinct)
-        if len(keys) > 1:
-            values = await self.gather_values(*keys, default=default)
-            return set(tuple(v) for v in values)
-        return set(await self.get_values(keys[0], default=default))
+        if self._records:
+            if len(keys) > 1:
+                values = await self.gather_values(*keys, default=default)
+                return set(tuple(v) for v in values)
+            return set(await self.get_values(keys[0], default=default))
+
+        context.setdefault('context', self.context)
+        context.setdefault('fields', keys)
+        context.setdefault('returning', 'data')
+        distinct_context = make_context(distinct=keys, **context)
+        model = self.model
+        records = await self.context.store.get_records(
+            model,
+            distinct_context,
+        )
+        if len(keys) == 1:
+            key = keys[0]
+            return {record[key] for record in records}
+        return {
+            tuple(record[key] for key in keys)
+            for record in records
+        }
 
     async def gather_values(self, *keys, default: Any=None) -> tuple:
         """Return a list of values from each record in the collection."""

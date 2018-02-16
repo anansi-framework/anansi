@@ -61,6 +61,26 @@ def test_context_merging():
     assert b.limit is None
 
 
+@pytest.mark.parametrize('base,distinct,result', (
+    (None, None, None),
+    (None, True, True),
+    (True, None, True),
+    (None, 'a', {'a'}),
+    (None, ['a'], {'a'}),
+    (None, ('a',), {'a'}),
+    ('a', 'b', {'a', 'b'}),
+    ('a,b', 'c,d', {'a', 'b', 'c', 'd'}),
+    ('a', True, {'a'}),
+    (True, 'a', {'a'}),
+))
+def test_context_distinct(base, distinct, result):
+    """Test merging distinct field."""
+    from anansi import make_context
+    base_context = make_context(distinct=base)
+    test_context = make_context(distinct=distinct, context=base_context)
+    assert test_context.distinct == result
+
+
 def test_context_limiting():
     """Test basic context limiting options."""
     from anansi import make_context
