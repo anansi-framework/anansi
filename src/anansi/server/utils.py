@@ -1,18 +1,17 @@
 """Server utility functions."""
-import json
-from typing import Any
-
+from typing import Any, Callable, Union
 from aiohttp.web import (
     HTTPException,
     HTTPForbidden,
     HTTPUnauthorized,
     json_response,
 )
-
 from aiohttp_security import (
     authorized_userid,
     permits,
 )
+import inspect
+import json
 
 from anansi.core.context import (
     Context,
@@ -36,21 +35,6 @@ RESERVED_PARAMS = (
 )
 
 
-async def assert_permitted(
-    request: 'aiohttp.web.Request',
-    permission: str,
-    context: Context=None,
-):
-    """Assert the request is properly permitted."""
-    user_id = await authorized_userid(request)
-    permitted = await permits(request, permission, context=context)
-    if permitted is False:
-        if user_id is None:
-            raise HTTPUnauthorized()
-        raise HTTPForbidden()
-    return True
-
-
 async def dump_collection(collection: 'orb.Collection') -> list:
     """Serialize collection records into basic objects."""
     return await collection.get_state()
@@ -59,6 +43,23 @@ async def dump_collection(collection: 'orb.Collection') -> list:
 async def dump_model(model: 'Model') -> dict:
     """Serialize record into a basic dictionary."""
     return await model.get_state()
+
+
+def error_response(exception, **kw):
+    """Create JSON error response."""
+    if isinstance(exception, HTTPException):
+        response = {
+            'error': type(exception).__name__,
+            'description': str(exception)
+        }
+        status = getattr(exception, 'status', 500)
+    else:
+        response = {
+            'error': 'UnknownServerException',
+            'description': 'Unknown server error.'
+        }
+        status = 500
+    return json_response(response, status=status)
 
 
 def load_param(param: str) -> Any:
@@ -90,18 +91,21 @@ def make_context_from_request(request: 'aiohttp.web.Request') -> Context:
     return make_context(**param_context)
 
 
-def error_response(exception, **kw):
-    """Create JSON error response."""
-    if isinstance(exception, HTTPException):
-        response = {
-            'error': type(exception).__name__,
-            'description': str(exception)
-        }
-        status = getattr(exception, 'status', 500)
-    else:
-        response = {
-            'error': 'UnknownServerException',
-            'description': 'Unknown server error.'
-        }
-        status = 500
-    return json_response(response, status=status)
+async def test_permit(
+    request: 'aiohttp.web.Request',
+    permit: Union[Callable, str],
+    context: Context=None,
+):
+    """Assert the request is properly permitted."""
+    if inspect.iscoroutinefunction(permit):
+        return await permit(request, context)
+    elif callable(permit):
+        return permit(request, context)
+    elif permit:
+        user_id = await authorized_userid(request)
+        permitted = await permits(request, permit, context=context)
+        if permitted is False:
+            if user_id is None:
+                raise HTTPUnauthorized()
+            raise HTTPForbidden()
+    return True
