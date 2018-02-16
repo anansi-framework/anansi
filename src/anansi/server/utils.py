@@ -1,5 +1,4 @@
 """Server utility functions."""
-from typing import Any, Callable, Union
 from aiohttp.web import (
     HTTPException,
     HTTPForbidden,
@@ -10,6 +9,7 @@ from aiohttp_security import (
     authorized_userid,
     permits,
 )
+from typing import Any, Callable, Type, Union
 import inspect
 import json
 
@@ -40,9 +40,37 @@ async def dump_collection(collection: 'orb.Collection') -> list:
     return await collection.get_state()
 
 
-async def dump_model(model: 'Model') -> dict:
+async def dump_record(record: 'Model') -> dict:
     """Serialize record into a basic dictionary."""
-    return await model.get_state()
+    return await record.get_state()
+
+
+async def get_values_from_request(
+    request: 'aiohttp.web.Request',
+    model: Type['Model'],
+) -> dict:
+    """Extract value data from the request object for the model."""
+    request_values = {}
+    try:
+        request_values.update({
+            k: load_param(v)
+            for k, v in (await request.post()).items()
+        })
+    except AttributeError:
+        pass
+
+    try:
+        request_values.update(await request.json())
+    except json.JSONDecodeError:
+        pass
+
+    schema = model.__schema__
+    values = {
+        field: request_values[field]
+        for field in schema.fields
+        if field in request_values
+    }
+    return values
 
 
 def error_response(exception, **kw):
@@ -62,6 +90,20 @@ def error_response(exception, **kw):
     return json_response(response, status=status)
 
 
+async def fetch_record_from_request(
+    request: 'aiohttp.web.Request',
+    model: Type['Model'],
+    *,
+    context: 'orb.Context'=None,
+    match_key: str='key',
+) -> 'Model':
+    """Extract record from request path."""
+    key = request.match_info[match_key]
+    if key.isdigit():
+        key = int(key)
+    return await model.fetch(key, context=context)
+
+
 def load_param(param: str) -> Any:
     """Convert param string to Python value."""
     try:
@@ -73,7 +115,9 @@ def load_param(param: str) -> Any:
 def make_context_from_request(request: 'aiohttp.web.Request') -> Context:
     """Make new context from a request."""
     get_params = dict(request.GET)
-    param_context = {}
+    param_context = {
+        'scope': {'request': request},
+    }
     for word in RESERVED_PARAMS:
         try:
             value = get_params.pop(word)

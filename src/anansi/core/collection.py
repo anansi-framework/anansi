@@ -269,6 +269,12 @@ class Collection:
                 for i, record in enumerate(self._records)
             ))
 
+    async def update(self, values: dict, **context):
+        """Update records within this collection."""
+        for record in await self.get_records():
+            await record.update(values)
+            await record.save()
+
 
 def make_records(
     model: Type['Model'],
