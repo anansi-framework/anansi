@@ -25,7 +25,7 @@ def model_route_handler(func: Callable):
 
         async def handler(request):
             try:
-                context = context_factory(request)
+                context = await context_factory(request)
                 if not await test_permit(request, permit, context=context):
                     raise HTTPForbidden()
                 response = await func(model, context=context)
@@ -51,7 +51,7 @@ def record_route_handler(func: Callable):
 
         async def handler(request):
             try:
-                context = context_factory(request)
+                context = await context_factory(request)
                 if not await test_permit(request, permit, context=context):
                     raise HTTPForbidden()
 
