@@ -106,8 +106,9 @@ class AbstractSql(AbstractStorage, metaclass=ABCMeta):
         i18n_changes.setdefault('locale', context.locale)
         i18n_column_str, i18n_value_str, i18n_values = changes_to_sql(
             i18n_changes,
+            field_key='i18n_code',
+            offset=len(values),
             quote=self.quote,
-            offset=len(values)
         )
 
         statement = sql.format(

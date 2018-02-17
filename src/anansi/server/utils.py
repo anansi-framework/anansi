@@ -48,7 +48,7 @@ def add_serializer(typ_: Type, func: Callable):
     SERIALIZERS[typ_] = func
 
 
-async def dump_collection(collection: 'orb.Collection') -> list:
+async def dump_collection(collection: 'anansi.Collection') -> list:
     """Serialize collection records into basic objects."""
     return await collection.get_state()
 
@@ -112,7 +112,7 @@ async def fetch_record_from_request(
     request: 'aiohttp.web.Request',
     model: Type['Model'],
     *,
-    context: 'orb.Context'=None,
+    context: 'anansi.Context'=None,
     match_key: str='key',
 ) -> 'Model':
     """Extract record from request path."""

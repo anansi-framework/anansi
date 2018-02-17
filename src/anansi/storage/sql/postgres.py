@@ -87,18 +87,20 @@ class Postgres(AbstractSql):
         """Create a translatable record in the database."""
         schema = record.__schema__
         sql = (
-            'WITH inserted AS (\n'
+            'WITH standard AS (\n'
             '   INSERT INTO {q}{namespace}{q}.{q}{table}{q} (\n'
             '       {columns}\n'
             '   )\n'
             '   VALUES({values})\n'
-            '   RETURNING *;\n'
+            '   RETURNING *\n'
+            '), i18n AS (\n'
+            '   INSERT INTO {q}{namespace}{q}.{q}{i18n_table}{q} (\n'
+            '       {i18n_columns}\n'
+            '   )\n'
+            '   SELECT {i18n_values} FROM standard\n'
+            '   RETURNING *\n'
             ')\n'
-            'INSERT INTO {q}{namespace}{q}.{q}{i18n_table}{q} (\n'
-            '   {i18n_columns}\n'
-            ')\n'
-            'SELECT {i18n_values} FROM inserted\n'
-            'RETURNING *;'
+            'SELECT standard.*, i18n.* FROM standard, i18n;'
         )
 
         column_str, value_str, values = changes_to_sql(
@@ -108,12 +110,13 @@ class Postgres(AbstractSql):
 
         i18n_changes.setdefault('locale', context.locale)
         for field in schema.key_fields:
-            i18n_changes[field.code] = value_literal(
-                'inserted."{}"'.format(field.code)
+            i18n_changes[field.i18n_code] = value_literal(
+                'standard."{}"'.format(field.code)
             )
 
         i18n_column_str, i18n_value_str, i18n_values = changes_to_sql(
             i18n_changes,
+            field_key='i18n_code',
             quote=self.quote,
             offset=len(values)
         )

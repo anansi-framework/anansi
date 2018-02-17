@@ -131,7 +131,7 @@ def add_record_resource(
 @model_route_handler
 async def create_record(
     model: Type['Model'],
-    context: 'orb.Context'=None,
+    context: 'anansi.Context'=None,
 ) -> dict:
     """Create a new record based on request values."""
     values = await get_values_from_request(
@@ -153,7 +153,7 @@ async def delete_record(record, context=None):
 @model_route_handler
 async def get_records(
     model: Type['Model'],
-    context: 'orb.Context'=None,
+    context: 'anansi.Context'=None,
 ) -> list:
     """Handle GET endpoint for models."""
     collection = await model.select(context=context)
@@ -161,13 +161,13 @@ async def get_records(
 
 
 @record_route_handler
-async def get_record(record: 'Model', context: 'orb.Context'=None) -> dict:
+async def get_record(record: 'Model', context: 'anansi.Context'=None) -> dict:
     """Serialize a record and return it."""
     return await dump_record(record)
 
 
 @record_route_handler
-async def update_record(record: 'Model', context: 'orb.Context'=None) -> dict:
+async def update_record(record: 'Model', context: 'anansi.Context'=None) -> dict:
     """Update a record in the database and return it."""
     values = await get_values_from_request(
         context.scope['request'],
@@ -181,7 +181,7 @@ async def update_record(record: 'Model', context: 'orb.Context'=None) -> dict:
 @model_route_handler
 async def update_records(
     model: Type['Model'],
-    context: 'orb.Context'=None,
+    context: 'anansi.Context'=None,
 ) -> list:
     """Update a set of records to a set of values."""
     values = await get_values_from_request(

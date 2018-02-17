@@ -61,12 +61,14 @@ def args_to_sql(
 
 def changes_to_sql(
     changes: Dict[Union['Field', str], Any],
+    *,
+    field_key: str='code',
+    offset: int=0,
     quote: str=DEFAULT_QUOTE,
-    offset: int=0
 ) -> Tuple[str, str, list]:
     """Create change statements in sql."""
     column_str = ', '.join(
-        '{0}{1}{0}'.format(quote, getattr(field, 'code', field))
+        '{0}{1}{0}'.format(quote, getattr(field, field_key, field))
         for field in changes.keys()
     )
     values = changes.values()
@@ -74,19 +76,25 @@ def changes_to_sql(
         getattr(value, 'literal_value', '${}'.format(i + 1 + offset))
         for i, value in enumerate(values)
     )
-    return column_str, value_str, values
+    out_values = [
+        value for value in values
+        if not hasattr(value, 'literal_value')
+    ]
+    return column_str, value_str, out_values
 
 
 def updates_to_sql(
     changes: Dict[Union['Field', str], Any],
+    *,
+    field_key: str='code',
+    offset: int=0,
     quote: str=DEFAULT_QUOTE,
-    offset: int=0
 ) -> Tuple[str, list]:
     """Create change statements in sql."""
     updates = ',\n'.join(
         '{0}{1}{0}={2}'.format(
             quote,
-            getattr(field, 'code', field),
+            getattr(field, field_key, field),
             getattr(value, 'literal_value', '${}'.format(i + 1 + offset)),
         )
         for i, (field, value) in enumerate(changes.items())
