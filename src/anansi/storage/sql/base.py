@@ -15,12 +15,15 @@ from anansi.core.query import Query
 from anansi.core.query_group import QueryGroup
 
 from .utils import (
+    DEFAULT_OP_MAP,
+    DEFAULT_ORDER_MAP,
     args_to_sql,
     changes_to_sql,
     fields_to_sql,
     group_changes,
     order_to_sql,
     query_to_sql,
+    sql_middleware,
     updates_to_sql,
 )
 
@@ -45,9 +48,9 @@ class AbstractSql(AbstractStorage, metaclass=ABCMeta):
         self.database = database
         self.default_namespace = default_namespace
         self.host = host
-        self.middleware = middleware or Middleware()
-        self.op_map = op_map or {}
-        self.order_map = order_map or {}
+        self.middleware = middleware or Middleware([sql_middleware])
+        self.op_map = op_map or DEFAULT_OP_MAP
+        self.order_map = order_map or DEFAULT_ORDER_MAP
         self.quote = quote
         self.password = password
         self.port = port

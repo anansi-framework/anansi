@@ -167,7 +167,10 @@ async def get_record(record: 'Model', context: 'anansi.Context'=None) -> dict:
 
 
 @record_route_handler
-async def update_record(record: 'Model', context: 'anansi.Context'=None) -> dict:
+async def update_record(
+    record: 'Model',
+    context: 'anansi.Context'=None,
+) -> dict:
     """Update a record in the database and return it."""
     values = await get_values_from_request(
         context.scope['request'],

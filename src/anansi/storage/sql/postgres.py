@@ -3,18 +3,14 @@
 import logging
 from typing import Any
 
-from anansi import Middleware, value_literal
+from anansi import value_literal
 
 from .base import (
     AbstractSql,
     changes_to_sql,
     resolve_namespace
 )
-from .utils import (
-    DEFAULT_OP_MAP,
-    DEFAULT_ORDER_MAP,
-    sql_middleware,
-)
+
 
 log = logging.getLogger(__name__)
 
@@ -24,16 +20,18 @@ class Postgres(AbstractSql):
 
     def __init__(
         self,
+        *,
+        default_namespace: str='public',
+        quote: str='"',
+        port: int=5432,
         **base_options
     ):
-        base_options.setdefault('default_namespace', 'public')
-        base_options.setdefault('middleware', Middleware([sql_middleware]))
-        base_options.setdefault('op_map', DEFAULT_OP_MAP)
-        base_options.setdefault('order_map', DEFAULT_ORDER_MAP)
-        base_options.setdefault('quote', '"')
-        base_options.setdefault('port', 5432)
-
-        super().__init__(**base_options)
+        super().__init__(
+            default_namespace=default_namespace,
+            quote=quote,
+            port=port,
+            **base_options,
+        )
 
         self._pool = None
 

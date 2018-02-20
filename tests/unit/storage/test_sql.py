@@ -243,7 +243,6 @@ async def test_sql_create_i18n_record(
             'Some Content',
             'Some Page',
             'en_US',
-            'inserted."id"',
             connection=None,
             method='fetch',
         )

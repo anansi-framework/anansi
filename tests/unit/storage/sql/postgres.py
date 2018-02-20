@@ -9,18 +9,20 @@ CREATE_RECORD = (
     'RETURNING *;'
 )
 CREATE_I18N_RECORD = (
-    'WITH inserted AS (\n'
+    'WITH standard AS (\n'
     '   INSERT INTO "{namespace}"."{table}" (\n'
     '       "{a}"\n'
     '   )\n'
     '   VALUES($1)\n'
-    '   RETURNING *;\n'
+    '   RETURNING *\n'
+    '), i18n AS (\n'
+    '   INSERT INTO "{namespace}"."{table}_i18n" (\n'
+    '       "{b}", "{c}", "locale", "{key}"\n'
+    '   )\n'
+    '   SELECT $2, $3, $4, standard."{key}" FROM standard\n'
+    '   RETURNING *\n'
     ')\n'
-    'INSERT INTO "{namespace}"."{table}_i18n" (\n'
-    '   "{b}", "{c}", "locale", "{key}"\n'
-    ')\n'
-    'SELECT $2, $3, $4, inserted."{key}" FROM inserted\n'
-    'RETURNING *;'
+    'SELECT standard.*, i18n.* FROM standard, i18n;'
 )
 DELETE_RECORD_BY_KEY_FIELD = (
     'DELETE FROM "{namespace}"."{table}" '
