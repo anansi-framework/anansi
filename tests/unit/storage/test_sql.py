@@ -339,7 +339,6 @@ async def test_sql_get_i18n_record_by_key_field(
 async def test_sql_get_record_by_key_index(mock_sql_storage, name, engine):
     """Test SQL engine getting a single record by index."""
     from anansi import Model, Field, Index
-    from anansi.core.collection import UNDEFINED
 
     class User(Model):
         first_name = Field()
@@ -373,7 +372,7 @@ async def test_sql_get_record_by_key_index(mock_sql_storage, name, engine):
         assert await u.get('last_name') == 'Smith'
         assert await u.get('username') == 'bob'
         assert all_users._first is u
-        assert all_users._last is UNDEFINED
+        assert hasattr(all_users, '_last') is False
         assert all_users._records is None
 
 
@@ -487,7 +486,6 @@ async def test_sql_get_filtered_record_count(
 async def test_sql_get_first_record(mock_sql_storage, name, engine):
     """Test SQL engine getting the first record of a collection."""
     from anansi import Model, Field
-    from anansi.core.collection import UNDEFINED
 
     class User(Model):
         id = Field(flags={'Key'})
@@ -513,7 +511,7 @@ async def test_sql_get_first_record(mock_sql_storage, name, engine):
         assert await u.get('id') == 1
         assert await u.get('username') == 'bob'
         assert all_users._first is u
-        assert all_users._last is UNDEFINED
+        assert hasattr(all_users, '_last') is False
         assert all_users._records is None
 
 
@@ -522,7 +520,6 @@ async def test_sql_get_first_record(mock_sql_storage, name, engine):
 async def test_sql_get_last_record(mock_sql_storage, name, engine):
     """Test SQL engine getting last record from a collection."""
     from anansi import Model, Field
-    from anansi.core.collection import UNDEFINED
 
     class User(Model):
         id = Field(flags={'Key'})
@@ -548,5 +545,5 @@ async def test_sql_get_last_record(mock_sql_storage, name, engine):
         assert await u.get('id') == 10
         assert await u.get('username') == 'jdoe'
         assert all_users._last is u
-        assert all_users._first is UNDEFINED
+        assert hasattr(all_users, '_first') is False
         assert all_users._records is None

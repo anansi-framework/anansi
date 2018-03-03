@@ -1,7 +1,7 @@
 """Define Model class."""
 
 from collections import OrderedDict
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Callable, Dict, Tuple, Union
 import asyncio
 
 from ..actions import FetchRecord
@@ -42,48 +42,32 @@ class Model(metaclass=ModelType):
         self._references = {}
 
         # apply base state
-        cls = type(self)
-        if state:
-            fields, references, collections = self._parse_items(
-                state,
-                constructor=lambda x: cls(state=x)
-            )
-            self._state.update(fields)
-            self._references.update(references)
-            self._collections.update(collections)
+        self._init_state(state)
+        self._init_changes(values)
 
-        # apply overrides
-        fields, references, collections = self._parse_items(
-            values,
-            constructor=lambda x: cls(values=x)
-        )
-
-        if not state:
-            self._changes.update(self.__schema__.default_values)
-
-        self._changes.update(fields)
-        self._references.update(references)
-        self._collections.update(collections)
-
-    def _parse_items(self, values: dict, constructor: callable=None):
+    def _parse_values(
+        self,
+        values: dict,
+        constructor: Callable=None,
+    ) -> Tuple[dict, dict, dict]:
         fields = {}
         references = {}
         collections = {}
-        if not values:
-            return fields, references, collections
-
         schema = self.__schema__
         for key, value in values.items():
             schema_object = schema[key]
+
             if isinstance(schema_object, Field):
                 if not schema_object.test_flag(Field.Flags.Virtual):
                     fields[key] = value
+
             elif isinstance(schema_object, Collector):
                 collections[key] = schema_object.make_collection(
                     constructor=constructor,
                     records=value,
                     source=self
                 )
+
             elif isinstance(schema_object, Reference):
                 model = schema_object.model
                 if not isinstance(value, model):
@@ -92,6 +76,39 @@ class Model(metaclass=ModelType):
                     references[key] = value
 
         return fields, references, collections
+
+    def _init_changes(self, values: dict):
+        if self.is_new_record:
+            self._changes.update(self.__schema__.default_values)
+
+        if values:
+            model = type(self)
+
+            def make_record(values):
+                return model(values=values)
+
+            fields, references, collections = self._parse_values(
+                values,
+                constructor=make_record,
+            )
+            self._changes.update(fields)
+            self._references.update(references)
+            self._collections.update(collections)
+
+    def _init_state(self, state: dict):
+        if state:
+            model = type(self)
+
+            def make_record(state):
+                return model(state=state)
+
+            fields, references, collections = self._parse_values(
+                state,
+                constructor=make_record,
+            )
+            self._state.update(fields)
+            self._references.update(references)
+            self._collections.update(collections)
 
     async def delete(self, **context):
         """Delete this record from it's store."""
@@ -177,18 +194,16 @@ class Model(metaclass=ModelType):
         except KeyError:
             pass
 
-        if ref.source:
-            field = self.__schema__[ref.source]
-            ref_model = field.refers_to_model
-            ref_field = field.refers_to_field
-            value = await self.get(ref.source)
-            if value is not None:
-                reference = await ref_model.fetch({ref_field: value})
-            else:
-                reference = None
-            self._references[key] = reference
-            return reference
-        return None
+        field = self.__schema__[ref.source]
+        ref_model = field.refers_to_model
+        ref_field = field.refers_to_field
+        value = await self.get(ref.source)
+        if value is not None:
+            reference = await ref_model.fetch({ref_field: value})
+        else:
+            reference = None
+        self._references[key] = reference
+        return reference
 
     async def get_value(self, key: str, default: Any=None) -> Any:
         """Return the record's value for a given field."""
@@ -267,7 +282,7 @@ class Model(metaclass=ModelType):
                 await settermethod(self, value)
             elif isinstance(schema_object, Reference):
                 self._references[field_key] = value
-            elif isinstance(schema_object, Collection):
+            elif isinstance(schema_object, Collector):
                 self._collections[field_key] = value
             elif not is_equal(self._state.get(field_key), value):
                 self._changes[field_key] = value
@@ -313,13 +328,10 @@ class Model(metaclass=ModelType):
         context.setdefault('store', cls.__store__)
         fetch_context = make_context(**context)
         records = await fetch_context.store.get_records(cls, fetch_context)
-        try:
-            record_data = dict(records[0])
-        except IndexError:
-            return None
-        if fetch_context.returning == ReturnType.Records:
-            return cls(state=record_data)
-        return record_data
+        data = dict(records[0]) if records else None
+        if data and fetch_context.returning == ReturnType.Records:
+            return cls(state=data)
+        return data
 
     @classmethod
     def make_fetch_query(cls, key: Any) -> 'Query':
@@ -330,8 +342,8 @@ class Model(metaclass=ModelType):
             return make_query_from_dict(key)
         elif type(key) not in (list, tuple):
             return cls.make_keyable_query(key)
-        else:
-            return cls.make_key_query(key)
+
+        return cls.make_key_query(key)
 
     @classmethod
     def make_key_query(cls, values: Union[list, tuple]) -> 'Query':
@@ -343,7 +355,7 @@ class Model(metaclass=ModelType):
             raise RuntimeError('Invalid key provided.')
 
         q = Query()
-        for i, field in key_fields:
+        for i, field in enumerate(key_fields):
             q &= Query(field.name) == values[i]
         return q
 

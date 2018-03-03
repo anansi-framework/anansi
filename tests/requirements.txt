@@ -1,6 +1,8 @@
 tox
+
+pytest-aiohttp
 pytest-asyncio
 pytest-mock
 pytest
-requests-mock
+
 coverage

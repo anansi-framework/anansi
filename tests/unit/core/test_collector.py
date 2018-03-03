@@ -62,7 +62,6 @@ async def test_collector_with_getter():
     u = User()
     coll = await u.get('employees')
     assert coll.source is u
-    assert len(coll) == 1
     assert await coll.get_first() is u
 
 

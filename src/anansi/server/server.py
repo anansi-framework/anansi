@@ -1,12 +1,10 @@
 """Define server functions."""
-import importlib
-import logging
-import sys
-
 from aiohttp import web
 from aiohttp.web_middlewares import normalize_path_middleware
-
 from dotted.utils import dot
+from typing import List
+import importlib
+import logging
 
 
 def get_default_middleware() -> list:
@@ -18,7 +16,7 @@ def get_default_middleware() -> list:
 
 def make_app(
     *,
-    addons: list=None,
+    addons: List[str]=None,
     config: dict=None,
     loop: 'asyncio.EventLoop'=None,
     middlewares: list=None,
@@ -59,7 +57,7 @@ def serve(
     middlewares: list=None,
     port: int=None,
     root: str=None,
-):
+) -> int:
     """Run aiohttp server."""
     config = dot(config or {})
     middlewares = middlewares or get_default_middleware()
@@ -85,4 +83,4 @@ def serve(
     else:
         main_app = app
 
-    sys.exit(web.run_app(main_app, host=host, port=port))
+    return web.run_app(main_app, host=host, port=port)

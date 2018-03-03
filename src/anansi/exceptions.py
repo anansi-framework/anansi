@@ -8,6 +8,12 @@ class OrbException(Exception):
     pass
 
 
+class CollectionIsNull(OrbException):
+    """Raised when accessing values from an empty collection."""
+
+    pass
+
+
 class CollectorNotFound(OrbException):
     """Raised when accessing a collector but none is available."""
 

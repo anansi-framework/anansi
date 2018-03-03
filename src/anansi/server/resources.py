@@ -6,11 +6,7 @@ from .factories import (
     model_route_handler,
     record_route_handler,
 )
-from .utils import (
-    dump_collection,
-    dump_record,
-    get_values_from_request,
-)
+from .request_helpers import get_values_from_request
 
 log = logging.getLogger(__name__)
 
@@ -57,7 +53,7 @@ def add_model_resource(
 ):
     """Add resource endpoint for anansi model."""
     permits = permits or {}
-    path = path or '/{}/'.format(model.__schema__.resource_name)
+    path = path or '/{}'.format(model.__schema__.resource_name)
 
     resource = app.router.add_resource(path)
     resource.add_route('GET', get_records(
@@ -140,7 +136,7 @@ async def create_record(
     )
     record = model(values, context=context)
     await record.save()
-    return await dump_record(record)
+    return await record.get_state()
 
 
 @record_route_handler
@@ -157,13 +153,13 @@ async def get_records(
 ) -> list:
     """Handle GET endpoint for models."""
     collection = await model.select(context=context)
-    return await dump_collection(collection)
+    return await collection.get_state()
 
 
 @record_route_handler
 async def get_record(record: 'Model', context: 'anansi.Context'=None) -> dict:
     """Serialize a record and return it."""
-    return await dump_record(record)
+    return await record.get_state()
 
 
 @record_route_handler
@@ -178,7 +174,7 @@ async def update_record(
     )
     await record.update(values)
     await record.save()
-    return await dump_record(record)
+    return await record.get_state()
 
 
 @model_route_handler
@@ -193,4 +189,4 @@ async def update_records(
     )
     collection = await model.select(context=context)
     await collection.update(values)
-    return await dump_collection(collection)
+    return await collection.get_state()

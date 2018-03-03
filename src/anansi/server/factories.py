@@ -1,17 +1,33 @@
 """Route factories."""
-from aiohttp.web import HTTPForbidden, json_response
+from aiohttp.web import HTTPException, HTTPForbidden, json_response
+from aiohttp_security import permits
 from typing import Callable, Type, Union
 import logging
 
-from .utils import (
-    dump_json,
-    error_response,
+from .request_helpers import (
     fetch_record_from_request,
     make_context_from_request,
-    test_permit,
 )
+from ..utils import json
 
 log = logging.getLogger(__name__)
+
+
+def error_response(exception, **kw):
+    """Create JSON error response."""
+    if isinstance(exception, HTTPException):
+        response = {
+            'error': type(exception).__name__,
+            'description': str(exception)
+        }
+        status = getattr(exception, 'status', 500)
+    else:
+        response = {
+            'error': 'UnknownServerException',
+            'description': 'Unknown server error.'
+        }
+        status = 500
+    return json_response(response, status=status)
 
 
 def model_route_handler(func: Callable):
@@ -24,12 +40,12 @@ def model_route_handler(func: Callable):
         permit: Union[Callable, str]=None,
     ):
         context_factory = context_factory or make_context_from_request
-        dumps = dumps or dump_json
+        dumps = dumps or json.dumps
 
         async def handler(request):
             try:
                 context = await context_factory(request)
-                if not await test_permit(request, permit, context=context):
+                if not await permits(request, permit, context=context):
                     raise HTTPForbidden()
                 response = await func(model, context=context)
                 return json_response(response, dumps=dumps)
@@ -52,12 +68,12 @@ def record_route_handler(func: Callable):
         permit: Union[Callable, str]=None,
     ):
         context_factory = context_factory or make_context_from_request
-        dumps = dumps or dump_json
+        dumps = dumps or json.dumps
 
         async def handler(request):
             try:
                 context = await context_factory(request)
-                if not await test_permit(request, permit, context=context):
+                if not await permits(request, permit, context=context):
                     raise HTTPForbidden()
 
                 record = await fetch_record_from_request(

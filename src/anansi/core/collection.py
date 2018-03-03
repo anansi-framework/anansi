@@ -1,6 +1,6 @@
 """Define Collection class."""
 import asyncio
-from typing import Any, Type
+from typing import Any, Generator, Type, Union
 
 from .context import (
     ReturnType,
@@ -8,9 +8,10 @@ from .context import (
     make_record_context,
     reverse_order
 )
-from ..exceptions import ReadOnly
-
-UNDEFINED = -1
+from ..exceptions import (
+    CollectionIsNull,
+    ReadOnly,
+)
 
 
 class Collection:
@@ -39,32 +40,98 @@ class Collection:
 
         self._model = model
         self._records = records
-        self._first = UNDEFINED
-        self._last = UNDEFINED
-        self._count = UNDEFINED
 
-    def __getitem__(self, index):
-        """Return records based on Python get item syntax."""
-        if type(index) == slice:
-            if self._records:
-                return self.clone(records=self._records[index])
-            elif index.start is not None and index.stop is not None:
-                return self.refine(
-                    limit=(index.stop - index.start),
-                    start=index.start
-                )
-            elif index.start is not None:
-                return self.refine(start=index.start)
+    async def _fetch_from_store(
+        self,
+        reverse: bool=False,
+    ):
+        model = self.model
+        default_order = model.__schema__.default_order
+
+        context = self.context
+        store = context.store
+        order_by = context.order_by or default_order
+        if reverse:
+            order_by = reverse_order(order_by)
+
+        record_context = make_context(
+            context=context,
+            order_by=order_by,
+            limit=1,
+        )
+        store_records = await store.get_records(
+            model,
+            record_context,
+        )
+        records = make_records(
+            model,
+            store_records,
+            record_context
+        )
+        try:
+            return next(records)
+        except StopIteration:
+            pass
+
+    async def _gather_from_records(
+        self,
+        keys,
+        default: Any=None,
+    ):
+        single_key = len(keys) == 1
+        for record in self._records:
+            values = await record.gather(*keys)
+            if single_key:
+                yield values[0]
             else:
-                return self.refine(limit=index.stop)
-        elif self._records:
-            return self._records[index]
+                yield tuple(values)
 
-    def __len__(self):
-        """Return length of this collection."""
+    async def _gather_from_store(
+        self,
+        keys,
+        distinct=False,
+    ):
+        model = self.model
+        if model is None:
+            raise CollectionIsNull
+
+        values_context = make_context(
+            context=self.context,
+            distinct=keys if distinct else None,
+            fields=keys,
+            returning='data',
+        )
+        records = await self.context.store.get_records(
+            model,
+            values_context,
+        )
+
+        first_key = keys[0]
+        single_key = len(keys) == 1
+        for record in records:
+            if single_key:
+                yield record[first_key]
+            else:
+                yield tuple(record[key] for key in keys)
+
+    async def _get_record_state(self):
+        """Return record states for this collection."""
         if self._records is not None:
-            return len(self._records)
-        return 0
+            return [await record.get_state() for record in self._records]
+
+        context = self.context
+        model = self.model
+        store_records = await context.store.get_records(model, context)
+        return list(map(dict, store_records))
+
+    async def at(self, index: int) -> 'Model':
+        """Return the model at a given index."""
+        if self._records:
+            return self._records[index]
+        elif self.model:
+            records = await self.get_records()
+            return records[index]
+        raise IndexError
 
     def clone(self, **options):
         """Create copy of this collection with any overrides."""
@@ -82,52 +149,39 @@ class Collection:
         delete_context = make_context(**context)
         return await self.context.store.delete_collection(self, delete_context)
 
-    async def distinct(self, *keys, default: Any=None, **context) -> set:
+    async def distinct(self, *keys, default: Any=None) -> set:
         """Return distinct values for the given fields."""
         if self._records:
-            if len(keys) > 1:
-                values = await self.gather_values(*keys, default=default)
-                return set(tuple(v) for v in values)
-            return set(await self.get_values(keys[0], default=default))
+            task = self._gather_from_records(keys, default=default)
+        else:
+            task = self._gather_from_store(keys, distinct=True)
+        return {value async for value in task}
 
-        context.setdefault('context', self.context)
-        context.setdefault('fields', keys)
-        context.setdefault('returning', 'data')
-        distinct_context = make_context(distinct=keys, **context)
-        model = self.model
-        records = await self.context.store.get_records(
-            model,
-            distinct_context,
-        )
-        if len(keys) == 1:
-            key = keys[0]
-            return {record[key] for record in records}
-        return {
-            tuple(record[key] for key in keys)
-            for record in records
-        }
-
-    async def gather_values(self, *keys, default: Any=None) -> tuple:
+    async def gather(self, *keys, default: Any=None) -> list:
         """Return a list of values from each record in the collection."""
         if self._records is not None:
-            return await asyncio.gather(*(
-                record.gather(*keys) for record in self._records
-            ))
-        return []
+            task = self._gather_from_records(keys, default=default)
+        else:
+            task = self._gather_from_store(keys)
+        return [value async for value in task]
 
     async def get_count(self) -> int:
         """Return the size of the collection."""
-        if self._count is not UNDEFINED:
-            return self._count
-        elif self._records is not None:
-            return len(self._records)
+        try:
+            return getattr(self, '_count')
+        except AttributeError:
+            pass
+
+        if self._records is not None:
+            count = len(self._records)
         else:
-            count_context = make_context(context=self.context)
-            self._count = await self.context.store.get_count(
+            count = await self.context.store.get_count(
                 self.model,
-                count_context
+                self.context,
             )
-            return self._count
+
+        setattr(self, '_count', count)
+        return count
 
     async def get(self, key: str, default: Any=None) -> Any:
         """Get a value from the collection."""
@@ -150,71 +204,33 @@ class Collection:
 
     async def get_first(self) -> Any:
         """Return the first record in the collection."""
-        if self._first is not UNDEFINED:
-            return self._first
-        elif self._records is not None:
-            try:
-                return self._records[0]
-            except IndexError:
-                return None
+        try:
+            return getattr(self, '_first')
+        except AttributeError:
+            pass
+
+        if self._records is not None:
+            first = self._records[0] if self._records else None
         else:
-            context = self.context
-            model = self.model
-            first_context = make_context(
-                context=context,
-                order_by=context.order_by or model.__schema__.default_order,
-                limit=1
-            )
-            store_records = await self.context.store.get_records(
-                model,
-                first_context
-            )
-            records = make_records(
-                model,
-                store_records,
-                first_context
-            )
-            try:
-                self._first = records[0]
-            except IndexError:
-                self._first = None
-            return self._first
-        return None
+            first = await self._fetch_from_store()
+
+        setattr(self, '_first', first)
+        return first
 
     async def get_last(self) -> Any:
         """Return the last record in the collection."""
-        if self._last is not UNDEFINED:
-            return self._last
+        try:
+            return getattr(self, '_last')
+        except AttributeError:
+            pass
+
         if self._records is not None:
-            try:
-                return self._records[-1]
-            except IndexError:
-                return None
+            last = self._records[-1] if self._records else None
         else:
-            model = self.model
-            context = self.context
-            last_context = make_context(
-                limit=1,
-                order_by=reverse_order(
-                    context.order_by or
-                    model.__schema__.default_order
-                ),
-                context=context
-            )
-            store_records = await self.context.store.get_records(
-                model,
-                last_context
-            )
-            records = make_records(
-                model,
-                store_records,
-                last_context
-            )
-            try:
-                self._last = records[0]
-            except IndexError:
-                self._last = None
-            return self._last
+            last = await self._fetch_from_store(reverse=True)
+
+        setattr(self, '_last', last)
+        return last
 
     async def get_records(self):
         """Return the records for this collection."""
@@ -224,35 +240,42 @@ class Collection:
         context = self.context
         model = self.model
         store_records = await context.store.get_records(model, context)
-        self._records = make_records(model, store_records, context)
+        iter_records = make_records(model, store_records, context)
+        self._records = list(iter_records)
         return self._records
 
     async def get_state(self) -> list:
         """Return the state of this collection as a simple list."""
         context = self.context
+        include = dict(context.include)
 
         if context.returning is ReturnType.Count:
-            count = await self.get_count()
-            return {
-                'count': count,
-            }
+            include = {'count': None}
+        elif not include:
+            include = {'records': None}
 
-        elif self._records is not None:
-            return await asyncio.gather(
-                *(record.get_state() for record in self._records)
-            )
+        state = {}
+        if 'count' in include:
+            state['count'] = await self.get_count()
+        if 'records' in include:
+            state['records'] = await self._get_record_state()
+        if 'first' in include:
+            first = await self.get_first()
+            first_state = await first.get_state() if first else None
+            state['first'] = first_state
+        if 'last' in include:
+            last = await self.get_last()
+            last_state = await last.get_state() if last else None
+            state['last'] = last_state
 
-        model = self.model
-        store_records = await context.store.get_records(model, context)
-        return [dict(record) for record in store_records]
+        if len(state) == 1 and 'records' in state:
+            return state['records']
+        return state
 
     async def get_values(self, key: str, default: Any=None) -> tuple:
         """Return a list of values from each record in the collection."""
-        if self._records is not None:
-            return await asyncio.gather(*(
-                record.get(key, default) for record in self._records
-            ))
-        return []
+        records = await self.get_records()
+        return [await record.get(key, default) for record in records]
 
     def refine(self, **context):
         """Refine this collection down with a new context."""
@@ -284,24 +307,29 @@ class Collection:
                 record.set(key, value[i] if is_iterable else value)
                 for i, record in enumerate(self._records)
             ))
+        else:
+            raise NotImplementedError('TODO(issue-#11)')
 
     async def update(self, values: dict, **context):
         """Update records within this collection."""
-        for record in await self.get_records():
-            await record.update(values)
-            await record.save()
+        if self._records:
+            for record in await self.get_records():
+                await record.update(values)
+                await record.save()
+        else:
+            raise NotImplementedError('TODO(issue-#10)')
 
 
 def make_records(
     model: Type['Model'],
     store_records: list,
     context: 'Context'
-) -> list:
+) -> Generator[Union['Model', dict], None, None]:
     """Convert store records to models."""
-    if context.returning == ReturnType.Records:
+    if context.returning == ReturnType.Data:
+        for record in map(dict, store_records):
+            yield record
+    else:
         model_context = make_record_context(context=context)
-        return [
-            model(state=dict(record), context=model_context)
-            for record in store_records
-        ]
-    return [dict(record) for record in store_records]
+        for record in store_records:
+            yield model(state=dict(record), context=model_context)

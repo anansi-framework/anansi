@@ -92,7 +92,10 @@ class Store:
 
     async def save_record(self, record: 'Model', context: 'Context') -> dict:
         """Dispatch SaveRecord action."""
-        action = SaveRecord(record=record, context=context)
+        action = SaveRecord(
+            record=record,
+            context=context,
+        )
         return await self.middleware.dispatch(action)
 
     async def save_collection(
@@ -131,11 +134,14 @@ def pop_store(store: Store=None) -> Store:
     if store is not None:
         try:
             STORE_STACK.remove(store)
-            return store
         except ValueError:
-            return None
-    else:
-        try:
-            return STORE_STACK.pop()
-        except IndexError:
-            return None
+            pass
+        else:
+            return store
+        return None
+
+    try:
+        return STORE_STACK.pop()
+    except IndexError:
+        pass
+    return None

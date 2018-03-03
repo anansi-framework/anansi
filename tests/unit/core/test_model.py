@@ -308,6 +308,32 @@ async def test_model_initialization_with_nested_collections_by_values():
     assert set(await user.get('employees.username')) == {'tom', 'john'}
 
 
+@pytest.mark.asyncio
+async def test_model_initialization_with_reference():
+    """Test initializing a model with reference."""
+    from anansi import Model, Field, Reference
+
+    class User(Model):
+        id = Field()
+        username = Field()
+        manager_id = Field(refers_to='User.id')
+        manager = Reference(model='User', source='manager_id')
+
+    jane = User(values={
+        'id': 2,
+        'username': 'jane.doe',
+        'manager_id': None,
+        'manager': None,
+    })
+    john = User(values={
+        'id': 1,
+        'username': 'john.doe',
+        'manager_id': 2,
+        'manager': jane
+    })
+    assert await john.get('manager') is jane
+
+
 def test_model_searching():
     """Test searching model for others by name."""
     from anansi import Model
@@ -357,6 +383,40 @@ async def test_model_get_nested_value(make_users):
     john, jane = make_users('john', 'jane')
     await john.set('manager', jane)
     assert await john.get('manager.username') == 'jane'
+
+
+@pytest.mark.asyncio
+async def test_model_get_errors(make_users):
+    """Test getting failures."""
+    from anansi.exceptions import (
+        CollectorNotFound,
+        ReferenceNotFound,
+    )
+    john = make_users('john')
+    with pytest.raises(CollectorNotFound):
+        await john.get_collection('users')
+    with pytest.raises(ReferenceNotFound):
+        await john.get_reference('parent')
+
+
+@pytest.mark.asyncio
+async def test_model_get_key():
+    """Test getting keys."""
+    from anansi import Field, Index, Model
+
+    class User(Model):
+        id = Field(flags={'Key'})
+
+    class UserGroup(Model):
+        group_id = Field()
+        user_id = Field()
+        by_group_and_user = Index(['group_id', 'user_id'], flags={'Key'})
+
+    u = User({'id': 1})
+    ug = UserGroup({'group_id': 1, 'user_id': 2})
+
+    assert await u.get_key() == 1
+    assert await ug.get_key() == [1, 2]
 
 
 @pytest.mark.asyncio
@@ -414,14 +474,32 @@ async def test_model_modification_by_update(make_users):
 @pytest.mark.asyncio
 async def test_model_set_collection():
     """Test assigning a value to a collection."""
-    from anansi import Model, Field
+    from anansi import Collector, Collection, Model
 
     class User(Model):
-        employees = Field()
+        employees = Collector(model='User')
 
-    u = User()
-    await u.set('employees', [1, 2, 3])
-    assert await u.get('employees') == [1, 2, 3]
+    a = User()
+    b = User()
+    c = Collection(records=[a])
+    await b.set('employees', c)
+    assert await b.get('employees') is c
+
+
+@pytest.mark.asyncio
+async def test_model_set_reference():
+    """Test assigning a value to a collection."""
+    from anansi import Field, Model, Reference
+
+    class User(Model):
+        id = Field()
+        manager_id = Field(refers_to='User.id')
+        manager = Reference(model='User', source='manager_id')
+
+    a = User()
+    b = User()
+    await b.set('manager', a)
+    assert await b.get('manager') is a
 
 
 @pytest.mark.asyncio
@@ -599,3 +677,115 @@ async def test_model_select_collection():
     assert coll.model is User
     assert coll.context.where.left == 'id'
     assert coll.context.where.right == 1
+
+
+@pytest.mark.asyncio
+async def test_model_ensure_exists(mocker):
+    """Test ensuring a record exists in the store."""
+    from anansi import Model, Field
+
+    class User(Model):
+        id = Field()
+        username = Field()
+        first_name = Field()
+        last_name = Field()
+
+    values = {'username': 'john.doe'}
+    defaults = {'first_name': 'John', 'last_name': 'Doe'}
+
+    async def save():
+        pass
+
+    async def fetch(values, **context):
+        return None
+
+    mock_fetch = mocker.patch.object(User, 'fetch', side_effect=fetch)
+    mock_save = mocker.patch.object(User, 'save', side_effect=save)
+
+    user = await User.ensure_exists(values, defaults=defaults)
+
+    mock_fetch.assert_called_with(values)
+    mock_save.assert_called_once()
+
+    results = await user.gather('username', 'first_name', 'last_name')
+    assert results == ['john.doe', 'John', 'Doe']
+
+
+def test_model_make_key_query_runtime_error():
+    """Test making a key query raises index error."""
+    from anansi import Model, Field
+
+    class User(Model):
+        id = Field(flags={'Key'})
+
+    with pytest.raises(RuntimeError):
+        User.make_key_query((1, 2))
+
+
+@pytest.mark.asyncio
+async def test_model_make_key_query_single_key():
+    """Test making fetch query with single key."""
+    from anansi import Model, Field
+
+    class User(Model):
+        id = Field(flags={'Key'})
+        username = Field()
+
+    key_fields = User.__schema__.key_fields
+    assert key_fields == [User.__schema__['id']]
+    query = User.make_key_query((1,))
+    assert query.left == 'id'
+    assert query.op == query.Op.Is
+    assert query.right == 1
+
+
+def test_model_make_key_query_multiple_keys():
+    """Test making fetch query with multiple keys."""
+    from anansi import Field, Index, Model
+
+    class UserGroup(Model):
+        user_id = Field()
+        group_id = Field()
+        by_user_and_group = Index(['user_id', 'group_id'], flags={'Key'})
+
+    query = UserGroup.make_fetch_query((1, 2))
+    assert query.queries[0].left == 'user_id'
+    assert query.queries[0].right == 1
+    assert query.queries[1].left == 'group_id'
+    assert query.queries[1].right == 2
+
+
+def test_model_make_keyable_query():
+    """Test making a query off keyable fields."""
+    from anansi import Model, Field
+
+    class User(Model):
+        id = Field(flags={'Key'})
+        username = Field(flags={'Keyable'})
+
+    query = User.make_keyable_query('john.doe')
+    assert query.queries[0].left == 'id'
+    assert query.queries[0].right == 'john.doe'
+    assert query.queries[1].left == 'username'
+    assert query.queries[1].right == 'john.doe'
+
+
+@pytest.mark.asyncio
+async def test_model_fetch(mocker):
+    """Test fetching records."""
+    from anansi import Model, Field, Store
+
+    class User(Model):
+        id = Field(flags={'Key'})
+
+    async def get_records(model, context):
+        return []
+
+    store = Store()
+    mocker.patch.object(
+        store,
+        'get_records',
+        side_effect=get_records,
+    )
+    record = await User.fetch(1, store=store)
+    assert record is None

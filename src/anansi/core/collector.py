@@ -1,6 +1,6 @@
 """Define Collector class."""
 from enum import IntFlag, auto
-from typing import Any, Iterable, Type, Union
+from typing import Any, Callable, Iterable, Type, Union
 
 from .collection import Collection
 from .query import Query as Q
@@ -22,14 +22,14 @@ class Collector:
         *,
         code: str=None,
         flags: CollectorFlags=CollectorFlags(0),
-        source: str=None,
-        gettermethod: callable=None,
+        gettermethod: Callable=None,
         model: str=None,
         name: str=None,
-        querymethod: callable=None,
-        settermethod: callable=None,
+        querymethod: Callable=None,
+        settermethod: Callable=None,
+        source: str=None,
+        target: str=None,
         through: str=None,
-        target: str=None
     ):
         self._model = model
         self.code = code
