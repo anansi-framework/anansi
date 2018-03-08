@@ -14,18 +14,32 @@ def test_model_definition():
 
 def test_model_definition_with_mixins():
     """Test defining a model that uses a mixin."""
-    from anansi import Model, Field, Collector, Index
+    from anansi import Model, Field, Collector, Index, Reference
 
     class CreationMixin:
         created_by = Field()
         created_at = Field()
 
+        created_by_ref = Reference()
+
         creations = Collector()
         by_created_by = Index()
+
+        def get_value(self):
+            return 1
+
+        def get_value_sum(self):
+            return super().get_value_sum() + 1
 
     class UpdateMixin:
         updated_by = Field()
         updated_at = Field()
+
+        def get_value(self):
+            return 2
+
+        def get_value_sum(self):
+            return 1
 
     class Page(CreationMixin, UpdateMixin, Model):
         text = Field()
@@ -33,17 +47,34 @@ def test_model_definition_with_mixins():
     class Comment(CreationMixin, UpdateMixin, Model):
         text = Field()
 
+        def get_value(self):
+            return super().get_value() + 5
+
+        def get_value_sum(self):
+            return 1
+
     p_schema = Page.__schema__
     c_schema = Comment.__schema__
 
     assert len(p_schema.local_collectors) == 1
     assert len(p_schema.local_indexes) == 1
+    assert len(p_schema.local_references) == 1
     assert len(p_schema.local_fields) == 5
     assert len(c_schema.local_fields) == 5
+    assert len(c_schema.local_references) == 1
 
     assert p_schema.fields['created_by'] is c_schema.fields['created_by']
     assert p_schema.fields['updated_by'] is c_schema.fields['updated_by']
     assert p_schema.fields['text'] is not c_schema.fields['created_by']
+
+    page = Page()
+    comment = Comment()
+
+    assert page.get_value() == 1
+    assert page.get_value_sum() == 2
+
+    assert comment.get_value() == 6
+    assert comment.get_value_sum() == 1
 
 
 def test_model_definition_with_inheritance():

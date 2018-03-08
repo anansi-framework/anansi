@@ -30,7 +30,7 @@ def error_response(exception, **kw):
     return json_response(response, status=status)
 
 
-def model_route_handler(func: Callable):
+def model_route_factory(func: Callable):
     """Generate a factory for defining endpoints to process models."""
     def factory(
         model: Type['Model'],
@@ -45,7 +45,11 @@ def model_route_handler(func: Callable):
         async def handler(request):
             try:
                 context = await context_factory(request)
-                if not await permits(request, permit, context=context):
+                permitted = (
+                    permit is None or
+                    await permits(request, permit, context=context)
+                )
+                if not permitted:
                     raise HTTPForbidden()
                 response = await func(model, context=context)
                 return json_response(response, dumps=dumps)
@@ -57,7 +61,7 @@ def model_route_handler(func: Callable):
     return factory
 
 
-def record_route_handler(func: Callable):
+def record_route_factory(func: Callable):
     """Generate a factory for defining endpoints to process records."""
     def factory(
         model: Type['Model'],
@@ -73,7 +77,11 @@ def record_route_handler(func: Callable):
         async def handler(request):
             try:
                 context = await context_factory(request)
-                if not await permits(request, permit, context=context):
+                permitted = (
+                    permit is None or
+                    await permits(request, permit, context=context)
+                )
+                if not permitted:
                     raise HTTPForbidden()
 
                 record = await fetch_record_from_request(

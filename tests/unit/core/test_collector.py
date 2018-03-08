@@ -10,11 +10,13 @@ def test_collector_definition():
     assert c.name == 'users'
     assert c.model is None
     assert c.make_collection().model is None
+    assert c.source_field is None
+    assert c.target_field is None
 
 
 def test_collector_model_reference():
     """Test collector properly references a model."""
-    from anansi import Model, Collector
+    from anansi import Collector, Model
 
     class CollectorModelReference(Model):
         pass
@@ -22,6 +24,24 @@ def test_collector_model_reference():
     c = Collector(name='users', model='CollectorModelReference')
     assert c.model is CollectorModelReference
     assert c.make_collection().model is CollectorModelReference
+
+    c.model = 'Missing'
+    assert c.model is None
+
+
+def test_collector_model_fields():
+    """Test collector model fields."""
+    from anansi import Collector
+
+    coll = Collector(
+        model='Missing',
+        source='id',
+        target='id',
+        through='Missing',
+    )
+
+    assert coll.source_field is None
+    assert coll.target_field is None
 
 
 def test_collector_initialize_collection():
@@ -119,9 +139,16 @@ def test_collector_reverse_lookup():
     assert page_schema['children'].through_model is None
 
 
-def test_collector_pipe():
+@pytest.mark.asyncio
+async def test_collector_pipe():
     """Test collector definition with pipe record."""
-    from anansi import Model, Collector, Index, Field
+    from anansi import (
+        Collection,
+        Collector,
+        Field,
+        Index,
+        Model,
+    )
 
     class Page(Model):
         id = Field(flags={'Key'})
@@ -170,6 +197,19 @@ def test_collector_pipe():
     assert cat_schema['pages'].source_field.name == 'category_id'
     assert cat_schema['pages'].target_field.name == 'page_id'
     assert cat_schema['pages'].through_model is PageCategory
+
+    page = Page({'id': 1})
+    coll = await page.get('categories')
+    where = coll.context.where
+    assert where.left == 'id'
+    assert where.op == where.Op.IsIn
+    assert type(where.right) is Collection
+
+    through = where.right.context.where
+    assert where.right.context.fields == ['category_id']
+    assert through.left == 'page_id'
+    assert through.op == where.Op.Is
+    assert through.right is page
 
 
 @pytest.mark.asyncio

@@ -300,3 +300,46 @@ async def test_reference_nested_loading_from_store(mocker):
         values = await comment.gather('user.role.id', 'user.role.name')
         assert values == [1, 'admin']
         assert mock_getter.call_count == 1
+
+
+def test_reference_virtual_overrides():
+    """Test reference overridding."""
+    from anansi import Reference
+
+    ref = Reference()
+
+    @ref.getter
+    async def get_value(**context):
+        pass
+
+    @ref.setter
+    async def set_value(**context):
+        pass
+
+    assert ref.gettermethod is get_value
+    assert ref.settermethod is set_value
+
+
+def test_reference_setting_model():
+    """Test reference model setting."""
+    from anansi import Model, Reference
+
+    class User(Model):
+        pass
+
+    ref = Reference()
+    assert ref._model is None
+    assert ref.model is None
+
+    ref = Reference(model='User')
+    assert ref._model == 'User'
+    assert ref.model is User
+
+    ref = Reference(model=User)
+    assert ref._model is User
+    assert ref.model is User
+
+    ref = Reference()
+    ref.model = 'User'
+    assert ref._model == 'User'
+    assert ref.model is User

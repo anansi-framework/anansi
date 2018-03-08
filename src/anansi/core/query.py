@@ -35,22 +35,12 @@ class Query:
 
     def __init__(
         self,
-        *args,
         left: str='',
+        *,
         model: Union[str, Type['Model']]='',
         op: QueryOp=QueryOp.Is,
         right: Any=None,
     ):
-        if len(args) == 1:
-            arg = args[0]
-            if type(arg) is tuple:
-                model, left = arg
-            else:
-                left = arg
-        elif len(args) > 1:
-            msg = 'Query() takes 0-1 positional arguments but {} was given'
-            raise TypeError(msg.format(len(args)))
-
         self._model = model
         self.left = left
         self.op = op
@@ -119,10 +109,36 @@ class Query:
         """Set model type instance for this query."""
         self._model = model
 
+    def to_dict(self):
+        """Return the query as a dictionary."""
+        left = self.left
+        right = self.right
+
+        if hasattr(left, 'to_dict'):
+            left = left.to_dict()
+        if hasattr(right, 'to_dict'):
+            right = right.to_dict()
+
+        if self._model and type(self._model) != str:
+            model_name = self._model.__schema__.name
+        elif self._model:
+            model_name = self._model
+        else:
+            model_name = None
+
+        out = {
+            'type': 'query',
+            'model': model_name,
+            'op': self.op.value,
+            'left': left,
+            'right': right,
+        }
+        return out
+
     model = property(get_model, set_model)
 
 
-def make_query_from_dict(values: dict) -> Query:
+def make_query_from_values(values: dict) -> Query:
     """Make a query from the given values."""
     q = Query()
     for field, value in values.items():

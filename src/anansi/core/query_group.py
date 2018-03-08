@@ -37,6 +37,15 @@ class QueryGroup:
         """Return whether or not this group is empty."""
         return len(self.queries) == 0
 
+    def to_dict(self):
+        """Return the query group as a dictionary."""
+        out = {
+            'type': 'group',
+            'op': self.op.value,
+            'queries': [q.to_dict() for q in self.queries],
+        }
+        return out
+
 
 def make_query_group(
     left: Union['Query', QueryGroup],

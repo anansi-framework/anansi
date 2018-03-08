@@ -20,8 +20,14 @@ def serializer(method: Callable) -> Callable:
 def serialize(obj: Any) -> Any:
     """Serialize the given object into a JSON compatible type."""
     for method in serializers:
-        obj = method(obj)
-    return obj
+        try:
+            return method(obj)
+        except NotImplementedError:
+            continue
+
+    type_name = type(obj).__name__
+    msg = 'Object of type "{}" is not JSON serializable'.format(type_name)
+    raise TypeError(msg)
 
 
 @serializer
@@ -33,4 +39,4 @@ def datetime_serializer(obj: Any) -> str:
         return obj.strftime('%Y-%m-%d')
     elif type(obj) is datetime.time:
         return obj.strftime('%H:%M:%S')
-    return obj
+    raise NotImplementedError

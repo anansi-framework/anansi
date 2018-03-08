@@ -81,6 +81,25 @@ def test_store_with_name():
         b.context.store
 
 
+def test_store_namespace():
+    """Test store namespace context."""
+    from anansi import Store, current_store
+    from anansi.exceptions import StoreNotFound
+
+    store = Store()
+    with store:
+        assert store.namespace == ''
+        assert current_store().namespace == ''
+        with store.for_namespace('auth') as auth_store:
+            assert auth_store.namespace == 'auth'
+            assert current_store().namespace == 'auth'
+        assert store.namespace == ''
+        assert current_store().namespace == ''
+
+    with pytest.raises(StoreNotFound):
+        assert current_store() is None
+
+
 def test_store_with_global_reference():
     """Test store with global context registry."""
     from anansi import Store, Model, push_store, pop_store

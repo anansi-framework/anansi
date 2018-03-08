@@ -7,13 +7,14 @@ try:
         __hash__,
         __version__
     )
-except ImportError:
+except ImportError:  # pragma: no cover
     __major__ = 0
     __minor__ = 0
     __revision__ = ''
     __hash__ = ''
     __version__ = ''
 
+from .core.abstract_storage import AbstractStorage  # noqa: F401
 from .core.collection import Collection  # noqa: F401
 from .core.collector import Collector  # noqa: F401
 from .core.context import (  # noqa: F401

@@ -1,4 +1,5 @@
 """Tests for the Query class."""
+import pytest
 
 
 def test_query_initialization():
@@ -11,24 +12,38 @@ def test_query_initialization():
     assert q.right is None
 
 
-def test_query_equals():
-    """Test query equals operator."""
+def test_query_initialization_with_keywords():
+    """Test query initialization with keywords."""
     from anansi import Query as Q
 
-    q = Q('username') == 'bob'
-    assert q.left == 'username'
-    assert q.op == Q.Op.Is
-    assert q.right == 'bob'
+    q = Q('id', model='User', op=Q.Op.IsNot, right=1)
+    assert q._model == 'User'
+    assert q.left == 'id'
+    assert q.op is Q.Op.IsNot
+    assert q.right == 1
 
 
-def test_query_not_equals():
-    """Test query not-equals operator."""
-    from anansi import Query as Q
+def test_query_setting_model():
+    """Test assigning model to query."""
+    from anansi import Model, Query as Q
 
-    q = Q('username') != 'bob'
-    assert q.left == 'username'
-    assert q.op == Q.Op.IsNot
-    assert q.right == 'bob'
+    class User(Model):
+        pass
+
+    q = Q()
+    assert q.model is None
+
+    q.model = 'User'
+    assert q._model == 'User'
+    assert q.model is User
+
+    q.model = User
+    assert q._model is User
+    assert q.model is User
+
+    q.model = 'Group'
+    assert q._model == 'Group'
+    assert q.model is None
 
 
 def test_query_and_joining_two_query_objects():
@@ -189,3 +204,151 @@ def test_query_joining_with_none():
     b = a & None
 
     assert b is a
+
+
+def test_query_with_model():
+    """Test associating a query with a model."""
+    from anansi import Model, Query as Q
+
+    class User(Model):
+        pass
+
+    q = Q('id', model=User)
+    assert q._model is User
+    assert q.model is User
+
+    q = Q('id', model='User')
+    assert q._model == 'User'
+    assert q.model is User
+
+    q = Q('id')
+    assert q.model is None
+
+
+def test_query_to_dict():
+    """Test converting query to dictionary."""
+    from anansi import Model, Query as Q
+
+    class User(Model):
+        pass
+
+    a = Q('username') == 'john.doe'
+    b = Q('username') == Q('display_name')
+    c = Q(Q('username', model='User')) == Q('display_name', model=User)
+
+    assert a.to_dict() == {
+        'type': 'query',
+        'model': None,
+        'op': 'is',
+        'left': 'username',
+        'right': 'john.doe',
+    }
+    assert b.to_dict() == {
+        'type': 'query',
+        'model': None,
+        'op': 'is',
+        'left': 'username',
+        'right': {
+            'type': 'query',
+            'model': None,
+            'op': 'is',
+            'left': 'display_name',
+            'right': None,
+        }
+    }
+    assert c.to_dict() == {
+        'type': 'query',
+        'model': None,
+        'op': 'is',
+        'left': {
+            'type': 'query',
+            'model': 'User',
+            'op': 'is',
+            'left': 'username',
+            'right': None,
+        },
+        'right': {
+            'type': 'query',
+            'model': 'User',
+            'op': 'is',
+            'left': 'display_name',
+            'right': None,
+        }
+    }
+
+
+@pytest.mark.parametrize('func,op', (
+    ('__eq__', 'Is'),
+    ('__ne__', 'IsNot'),
+    ('is_in', 'IsIn'),
+    ('is_not_in', 'IsNotIn'),
+    ('matches', 'Matches'),
+))
+def test_query_operators(func, op):
+    """Test query using is_in op."""
+    from anansi import Query as Q
+
+    left = 'left'
+    right = 'right'
+
+    a = Q(left)
+    b = getattr(a, func)(right)
+    assert a.left == left
+    assert a.right is None
+    assert a.op == Q.Op.Is
+
+    assert b.left == left
+    assert b.right == right
+    assert b.op == Q.Op[op]
+
+
+def test_query_make_from_values():
+    """Test creating a query from a dictionary."""
+    from anansi.core.query import make_query_from_values
+
+    q = make_query_from_values({'a': 1, 'b': 2})
+    assert q.to_dict() == {
+        'type': 'group',
+        'op': 'and',
+        'queries': [{
+            'type': 'query',
+            'model': None,
+            'left': 'a',
+            'op': 'is',
+            'right': 1,
+        }, {
+            'type': 'query',
+            'model': None,
+            'left': 'b',
+            'op': 'is',
+            'right': 2,
+        }]
+    }
+
+
+def test_query_make_from_values_with_fields():
+    """Test creating a query from a dictionary."""
+    from anansi import Field
+    from anansi.core.query import make_query_from_values
+
+    q = make_query_from_values({
+        Field(name='a'): 1,
+        Field(name='b'): 2
+    })
+    assert q.to_dict() == {
+        'type': 'group',
+        'op': 'and',
+        'queries': [{
+            'type': 'query',
+            'model': None,
+            'left': 'a',
+            'op': 'is',
+            'right': 1,
+        }, {
+            'type': 'query',
+            'model': None,
+            'left': 'b',
+            'op': 'is',
+            'right': 2,
+        }]
+    }

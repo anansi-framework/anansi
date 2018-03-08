@@ -34,14 +34,6 @@ class GetRecords:
         self.model = model
 
 
-class FetchRecord:
-    """FetchRecord action."""
-
-    def __init__(self, model: Type['Model']=None, context: 'Context'=None):
-        self.context = context
-        self.model = model
-
-
 class SaveCollection:
     """SaveCollection action."""
 

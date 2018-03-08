@@ -3,8 +3,8 @@ from typing import Callable, Type
 import logging
 
 from .factories import (
-    model_route_handler,
-    record_route_handler,
+    model_route_factory,
+    record_route_factory,
 )
 from .request_helpers import get_values_from_request
 
@@ -124,7 +124,7 @@ def add_record_resource(
     ))
 
 
-@model_route_handler
+@model_route_factory
 async def create_record(
     model: Type['Model'],
     context: 'anansi.Context'=None,
@@ -139,14 +139,14 @@ async def create_record(
     return await record.get_state()
 
 
-@record_route_handler
+@record_route_factory
 async def delete_record(record, context=None):
     """Handle DELETE request for a record."""
     await record.delete()
     return {'status': 'ok'}
 
 
-@model_route_handler
+@model_route_factory
 async def get_records(
     model: Type['Model'],
     context: 'anansi.Context'=None,
@@ -156,13 +156,13 @@ async def get_records(
     return await collection.get_state()
 
 
-@record_route_handler
+@record_route_factory
 async def get_record(record: 'Model', context: 'anansi.Context'=None) -> dict:
     """Serialize a record and return it."""
     return await record.get_state()
 
 
-@record_route_handler
+@record_route_factory
 async def update_record(
     record: 'Model',
     context: 'anansi.Context'=None,
@@ -177,7 +177,7 @@ async def update_record(
     return await record.get_state()
 
 
-@model_route_handler
+@model_route_factory
 async def update_records(
     model: Type['Model'],
     context: 'anansi.Context'=None,

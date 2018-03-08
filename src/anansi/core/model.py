@@ -4,7 +4,6 @@ from collections import OrderedDict
 from typing import Any, Callable, Dict, Tuple, Union
 import asyncio
 
-from ..actions import FetchRecord
 from ..exceptions import (
     CollectorNotFound,
     FieldNotFound,
@@ -321,7 +320,7 @@ class Model(metaclass=ModelType):
         return record
 
     @classmethod
-    async def fetch(cls, key: Any, **context) -> FetchRecord:
+    async def fetch(cls, key: Any, **context) -> 'Model':
         """Fetch a single record from the store for the given key."""
         context['where'] = cls.make_fetch_query(key) & context.get('where')
         context['limit'] = 1
@@ -336,10 +335,10 @@ class Model(metaclass=ModelType):
     @classmethod
     def make_fetch_query(cls, key: Any) -> 'Query':
         """Create query for the key."""
-        from .query import make_query_from_dict
+        from .query import make_query_from_values
 
         if type(key) is dict:
-            return make_query_from_dict(key)
+            return make_query_from_values(key)
         elif type(key) not in (list, tuple):
             return cls.make_keyable_query(key)
 

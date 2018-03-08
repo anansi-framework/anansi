@@ -79,9 +79,9 @@ class Field:
         """Assert the given value is valid for the field rules."""
         if self.test_flag(FieldFlags.Required):
             defined = value is not None
-            assert defined, 'value is required'
+            assert defined, 'Value is required.'
         if None not in (self.data_type, value):
-            assert isinstance(value, self.data_type), 'invalid data type'
+            assert isinstance(value, self.data_type), 'Invalid data type.'
         if self.validator:
             if inspect.iscoroutinefunction(self.validator):
                 await self.validator(self, value)

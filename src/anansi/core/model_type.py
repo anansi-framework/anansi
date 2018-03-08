@@ -47,7 +47,7 @@ def parse_schema_info(classes: list) -> Tuple[dict, dict, dict, list]:
                     indexes[key] = value
                 elif isinstance(value, Reference):
                     references[key] = value
-                else:
+                else:  # pragma: no cover
                     continue
 
                 if not value.name:

@@ -6,6 +6,8 @@ from typing import List
 import importlib
 import logging
 
+DEFAULT_PORT = 8080
+
 
 def get_default_middleware() -> list:
     """Return default middleware for anansi server."""
@@ -74,7 +76,7 @@ def serve(
         logging.config.dictConfig(logging_config)
 
     host = host or config.get('server.host')
-    port = port or config.get('server.port')
+    port = port or config.get('server.port') or DEFAULT_PORT
     root = root or config.get('server.root')
 
     if root:

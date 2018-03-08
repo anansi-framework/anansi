@@ -10,18 +10,22 @@ class Schema:
     def __init__(
         self,
         *,
+        collectors: dict=None,
+        fields: dict=None,
+        i18n_name: str='',
+        indexes: dict=None,
         inherits: list=None,
         label: str='',
         name: str='',
         namespace: str='',
+        references: dict=None,
         resource_name: str='',
-        i18n_name: str=''
     ):
         self.inherits = inherits
-        self.local_collectors = {}
-        self.local_fields = {}
-        self.local_indexes = {}
-        self.local_references = {}
+        self.local_collectors = collectors if collectors is not None else {}
+        self.local_fields = fields if fields is not None else {}
+        self.local_indexes = indexes if indexes is not None else {}
+        self.local_references = references if references is not None else {}
         self.name = name
         self.namespace = namespace
 
@@ -35,16 +39,16 @@ class Schema:
         key: str
     ) -> Union['Collector', 'Field', 'Reference']:
         """Shortcut to getting collectors, fields and references by name."""
-        try:
-            return self.fields[key]
-        except KeyError:
+        for data in (
+            self.fields,
+            self.collectors,
+            self.references,
+            self.indexes,
+        ):
             try:
-                return self.collectors[key]
+                return data[key]
             except KeyError:
-                try:
-                    return self.references[key]
-                except KeyError:
-                    pass
+                pass
         raise KeyError(key)
 
     @property
@@ -140,7 +144,7 @@ class Schema:
     @property
     def label(self) -> str:
         """Reurn the label for this schema."""
-        return self._label or inflection.titelize(self.name)
+        return self._label or inflection.titleize(self.name)
 
     @property
     def references(self) -> dict:
@@ -163,7 +167,11 @@ class Schema:
     @property
     def i18n_name(self) -> str:
         """Return the name used for internationalization for this model."""
-        return self._i18n_name or '{}_i18n'.format(self.resource_name)
+        if self._i18n_name:
+            return self._i18n_name
+        elif self.resource_name:
+            return '{}_i18n'.format(self.resource_name)
+        return ''
 
     @property
     def translatable_fields(self) -> List['Field']:

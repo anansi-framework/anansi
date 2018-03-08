@@ -123,7 +123,9 @@ def test_context_page_limiting():
     ({'include': 'a,b,b.c'}, None, {'a': {}, 'b': {'c': {}}}),
     ({'fields': 'a,b.c,b.d,b.e.f'}, None, {'b': {'e': {}}}),
     ({'include': 'a', 'fields': 'a.b'}, None, {'a': {}}),
-    ({'include': 'a'}, {'include': 'b'}, {'a': {}, 'b': {}})
+    ({'include': 'a'}, {'include': 'b'}, {'a': {}, 'b': {}}),
+    ({'include': ['a', 'c']}, {'include': 'b'}, {'a': {}, 'b': {}, 'c': {}}),
+    ({'include': ('a', 'c')}, {'include': 'b'}, {'a': {}, 'b': {}, 'c': {}}),
 ))
 def test_context_inclusion(options, base_context, expected):
     """Test including references from the context."""
@@ -133,3 +135,38 @@ def test_context_inclusion(options, base_context, expected):
         options['context'] = make_context(**base_context)
     context = make_context(**options)
     assert context.include == expected
+
+
+@pytest.mark.parametrize(
+    ','.join((
+        'schema_namespace',
+        'context_namespace',
+        'store_namespace',
+        'default_namespace',
+        'expected_namespace',
+    )),
+    (
+        ('', '', '', '', ''),
+        ('', '', '', 'a', 'a'),
+        ('', '', 'b', 'a', 'b'),
+        ('', 'c', 'b', 'a', 'c'),
+        ('d', 'c', 'b', 'a', 'd'),
+    )
+)
+def test_context_resolve_namespace(
+    schema_namespace,
+    context_namespace,
+    store_namespace,
+    default_namespace,
+    expected_namespace,
+):
+    """Test resolving of namespaces."""
+    from anansi import Schema, Store, make_context
+    from anansi.core.context import resolve_namespace
+
+    schema = Schema(namespace=schema_namespace)
+    store = Store(namespace=store_namespace)
+    context = make_context(store=store, namespace=context_namespace)
+
+    result = resolve_namespace(schema, context, default=default_namespace)
+    assert result == expected_namespace

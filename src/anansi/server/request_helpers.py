@@ -2,6 +2,7 @@
 from aiohttp.web import HTTPNotFound
 from typing import Any, Type
 import json
+import logging
 
 from anansi.core.context import (
     Context,
@@ -9,6 +10,7 @@ from anansi.core.context import (
 )
 from anansi.core.query import Query
 
+log = logging.getLogger(__name__)
 
 RESERVED_PARAMS = (
     'distinct',
@@ -41,6 +43,8 @@ async def get_values_from_request(
         json_body = await request.json()
     except json.JSONDecodeError:
         pass
+    except Exception:  # pragma: no cover
+        log.exception('Failed to parse json body.')
     else:
         request_values.update(json_body)
 

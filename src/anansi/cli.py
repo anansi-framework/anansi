@@ -32,21 +32,23 @@ def make_command(parser: argparse.ArgumentParser) -> callable:
                     type=spec.annotations.get(arg_name, str),
                 )
 
-            for i, opt_name in enumerate(spec.args[-num_kw:]):
-                default = spec.defaults[i]
-                opt_type = spec.annotations.get(opt_name, str)
-                opt_kw = {}
+            if num_kw:
+                for i, opt_name in enumerate(spec.args[-num_kw:]):
+                    default = spec.defaults[i]
+                    opt_type = spec.annotations.get(opt_name, str)
+                    opt_kw = {}
 
-                if opt_type is bool:
-                    opt_kw['action'] = 'store_{}'.format(not default).lower()
-                else:
-                    opt_kw['type'] = opt_type
+                    if opt_type is bool:
+                        action = 'store_{}'.format(not default).lower()
+                        opt_kw['action'] = action
+                    else:
+                        opt_kw['type'] = opt_type
 
-                sub_parser.add_argument(
-                    '--' + opt_name,
-                    default=default,
-                    **opt_kw,
-                )
+                    sub_parser.add_argument(
+                        '--' + opt_name,
+                        default=default,
+                        **opt_kw,
+                    )
 
             func.arg_parser = sub_parser
             func.command = make_command(sub_parser)
@@ -60,8 +62,6 @@ def make_runner(parser):
     def runner(argv):
         arg_dict = vars(parser.parse_args(argv))
         func = arg_dict.pop('func', None)
-        if func is None:
-            raise RuntimeError('Invalid function.')
         spec = inspect.getfullargspec(func)
         num_kw = len(spec.defaults) if spec.defaults else 0
         args = (
@@ -78,7 +78,7 @@ def make_runner(parser):
     return runner
 
 
-def cli(version=None, **kw):
+def interface(version=None, **kw):
     """Define root command line interface."""
     def wrapper(func):
         kw.setdefault('prog', func.__name__)
@@ -98,18 +98,18 @@ def cli(version=None, **kw):
     return wrapper
 
 
-@cli(prog='anansi', version=__version__)
-def anansi_cli():  # noqa: D403
+@interface(prog='anansi', version=__version__)
+def cli():  # noqa: D403
     """anansi command line interface."""
     pass
 
 
-@anansi_cli.command()
+@cli.command()
 def serve(
     addons: str='',
     config: str=None,
     host: str=None,
-    port: int=8080,
+    port: int=None,
     root: str='',
 ):
     """Start webserver."""
@@ -126,7 +126,7 @@ def serve(
         conf = None
 
     return serve(
-        addons=addons.split(','),
+        addons=addons.split(',') if addons else [],
         config=conf,
         host=host,
         port=port,
@@ -134,10 +134,10 @@ def serve(
     )
 
 
-def main():
+def main():  # pragma: no cover
     """Run main command line interface loop."""
-    return anansi_cli.run(sys.argv[1:])
+    return cli.run(sys.argv[1:])
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     main()
