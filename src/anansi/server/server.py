@@ -24,11 +24,15 @@ def make_app(
     middlewares: list=None,
 ) -> 'aiohttp.web.WebApplication':
     """Create WebApplication for anansi."""
+    if middlewares is None:
+        middlewares = get_default_middleware()
+
     config = dot(config or {})
     app = web.Application(
         loop=loop,
         middlewares=middlewares,
     )
+
     app['anansi.config'] = config
 
     plugins = config.get('server.plugins', [])
@@ -36,6 +40,13 @@ def make_app(
         import_plugins(app, plugins)
     if addons:
         import_plugins(app, addons)
+
+    root = config.get('server.root')
+    if root:
+        parent = web.Application(loop=loop)
+        parent.add_subapp(root, app)
+        return parent
+
     return app
 
 
@@ -58,12 +69,9 @@ def serve(
     loop: 'asyncio.EventLoop'=None,
     middlewares: list=None,
     port: int=None,
-    root: str=None,
 ) -> int:
     """Run aiohttp server."""
     config = dot(config or {})
-    middlewares = middlewares or get_default_middleware()
-
     app = make_app(
         addons=addons,
         config=config,
@@ -77,12 +85,5 @@ def serve(
 
     host = host or config.get('server.host')
     port = port or config.get('server.port') or DEFAULT_PORT
-    root = root or config.get('server.root')
 
-    if root:
-        main_app = web.Application(loop=loop)
-        main_app.add_subapp(root, app)
-    else:
-        main_app = app
-
-    return web.run_app(main_app, host=host, port=port)
+    return web.run_app(app, host=host, port=port)

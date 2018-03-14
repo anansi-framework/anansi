@@ -110,7 +110,6 @@ def serve(
     config: str=None,
     host: str=None,
     port: int=None,
-    root: str='',
 ):
     """Start webserver."""
     from anansi.server import serve
@@ -130,7 +129,6 @@ def serve(
         config=conf,
         host=host,
         port=port,
-        root=root,
     )
 
 

@@ -43,7 +43,6 @@ def test_command():
             'config': None,
             'host': None,
             'port': None,
-            'root': '',
         },
     ),
     (
@@ -55,15 +54,12 @@ def test_command():
             'localhost',
             '--port',
             '1234',
-            '--root',
-            '/api/v1'
         ],
         {
             'addons': ['test.a', 'test.b'],
             'config': None,
             'host': 'localhost',
             'port': 1234,
-            'root': '/api/v1',
         },
     ),
     (
@@ -82,7 +78,6 @@ def test_command():
             },
             'host': None,
             'port': None,
-            'root': '',
         },
     ),
     (
@@ -101,7 +96,6 @@ def test_command():
             },
             'host': None,
             'port': None,
-            'root': '',
         },
     ),
 ))

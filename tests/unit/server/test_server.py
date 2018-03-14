@@ -93,8 +93,9 @@ def test_server_serve_with_root(mocker):
         'server': {
             'host': 'localhost',
             'port': 1234,
+            'root': '/api/v1',
         }
     }
-    serve(config=config, root='/api/v1')
+    serve(config=config)
     mock_log_setup.assert_called_with(log_config)
     assert mock_run_app.call_count == 1
