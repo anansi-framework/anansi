@@ -82,24 +82,25 @@ def load_param(param: str) -> Any:
         return param
 
 
-async def make_context_from_request(request: 'aiohttp.web.Request') -> Context:
+async def make_context_from_request(
+    request: 'aiohttp.web.Request',
+    **context,
+) -> Context:
     """Make new context from a request."""
     query_params = dict(request.query)
-    param_context = {
-        'scope': {'request': request},
-    }
+    context.setdefault('scope', {})['request'] = request
     for word in RESERVED_PARAMS:
         try:
             value = query_params.pop(word)
         except KeyError:
             pass
         else:
-            param_context[word] = load_param(value)
+            context[word] = load_param(value)
 
     if query_params:
         where = Query()
         for key, value in query_params.items():
             where &= Query(key) == load_param(value)
-        param_context['where'] = where
+        context['where'] = where
 
-    return make_context(**param_context)
+    return make_context(**context)

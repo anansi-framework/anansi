@@ -50,6 +50,31 @@ async def test_model_route_factory(mocker):
 
 
 @pytest.mark.asyncio
+async def test_model_route_factory_with_store(mocker):
+    """Test creating a model route factory."""
+    from anansi import Model, Field, Store
+    from anansi.server.factories import model_route_factory
+
+    store = Store()
+
+    class User(Model):
+        id = Field()
+
+    @model_route_factory
+    async def create_user(model, context):
+        assert context.store is store
+        return {'id': 1}
+
+    factory = create_user(User, store=store)
+    request = make_mocked_request('GET', '/')
+    response = await factory(request)
+    assert response.status == 200
+    assert json.loads(response.body) == {
+        'id': 1,
+    }
+
+
+@pytest.mark.asyncio
 async def test_model_route_factory_forbidden(mocker):
     """Test creating a model route factory."""
     from anansi import Model, Field
@@ -133,6 +158,39 @@ async def test_record_route_factory(mocker):
         return record
 
     factory = create_user(User)
+    request = make_mocked_request('GET', '/')
+    response = await factory(request)
+    assert response.status == 200
+    assert json.loads(response.body) == {
+        'id': 1,
+    }
+
+
+@pytest.mark.asyncio
+async def test_record_route_factory_with_store(mocker):
+    """Test creating a model route factory."""
+    from anansi import Model, Field, Store
+    from anansi.server.factories import record_route_factory
+
+    async def fetch_record(request, model, match_key='', context=None):
+        return {'id': 1}
+
+    mocker.patch(
+        'anansi.server.factories.fetch_record_from_request',
+        side_effect=fetch_record,
+    )
+
+    store = Store()
+
+    class User(Model):
+        id = Field()
+
+    @record_route_factory
+    async def create_user(record, context):
+        assert context.store is store
+        return record
+
+    factory = create_user(User, store=store)
     request = make_mocked_request('GET', '/')
     response = await factory(request)
     assert response.status == 200

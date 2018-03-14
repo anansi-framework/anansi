@@ -38,13 +38,14 @@ def model_route_factory(func: Callable):
         context_factory: Callable=None,
         dumps: Callable=None,
         permit: Union[Callable, str]=None,
+        store: 'Store'=None,
     ):
         context_factory = context_factory or make_context_from_request
         dumps = dumps or json.dumps
 
         async def handler(request):
             try:
-                context = await context_factory(request)
+                context = await context_factory(request, store=store)
                 permitted = (
                     permit is None or
                     await permits(request, permit, context=context)
@@ -70,13 +71,14 @@ def record_route_factory(func: Callable):
         dumps: Callable=None,
         match_key: str='key',
         permit: Union[Callable, str]=None,
+        store: 'Store'=None,
     ):
         context_factory = context_factory or make_context_from_request
         dumps = dumps or json.dumps
 
         async def handler(request):
             try:
-                context = await context_factory(request)
+                context = await context_factory(request, store=store)
                 permitted = (
                     permit is None or
                     await permits(request, permit, context=context)

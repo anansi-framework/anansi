@@ -19,6 +19,7 @@ def add_resource(
     dumps: Callable=None,
     path: str=None,
     permits: dict=None,
+    store: 'Store'=None,
 ):
     """Add resource for anansi models."""
     model_path = path or '/{}'.format(model.__schema__.resource_name)
@@ -31,6 +32,7 @@ def add_resource(
         dumps=dumps,
         path=record_path,
         permits=permits,
+        store=store,
     )
     add_model_resource(
         app,
@@ -39,6 +41,7 @@ def add_resource(
         dumps=dumps,
         path=model_path,
         permits=permits,
+        store=store,
     )
 
 
@@ -50,6 +53,7 @@ def add_model_resource(
     dumps: Callable=None,
     path: str=None,
     permits: dict=None,
+    store: 'Store'=None,
 ):
     """Add resource endpoint for anansi model."""
     permits = permits or {}
@@ -60,25 +64,29 @@ def add_model_resource(
         model,
         context_factory=context_factory,
         dumps=dumps,
-        permit=permits.get('GET')
+        permit=permits.get('GET'),
+        store=store,
     ))
     resource.add_route('POST', create_record(
         model,
         context_factory=context_factory,
         dumps=dumps,
-        permit=permits.get('POST')
+        permit=permits.get('POST'),
+        store=store,
     ))
     resource.add_route('PATCH', update_records(
         model,
         context_factory=context_factory,
         dumps=dumps,
         permit=permits.get('PATCH'),
+        store=store,
     ))
     resource.add_route('PUT', update_records(
         model,
         context_factory=context_factory,
         dumps=dumps,
         permit=permits.get('PUT'),
+        store=store,
     ))
 
     return resource
@@ -92,6 +100,7 @@ def add_record_resource(
     dumps: Callable=None,
     path: str=None,
     permits: dict=None,
+    store: 'Store'=None,
 ):
     """Add resource endpoint for aiob records."""
     permits = permits or {}
@@ -103,24 +112,28 @@ def add_record_resource(
         context_factory=context_factory,
         dumps=dumps,
         permit=permits.get('DELETE'),
+        store=store,
     ))
     resource.add_route('GET', get_record(
         model,
         context_factory=context_factory,
         dumps=dumps,
         permit=permits.get('GET'),
+        store=store,
     ))
     resource.add_route('PATCH', update_record(
         model,
         context_factory=context_factory,
         dumps=dumps,
         permit=permits.get('PATCH'),
+        store=store,
     ))
     resource.add_route('PUT', update_record(
         model,
         context_factory=context_factory,
         dumps=dumps,
-        permit=permits.get('PUT')
+        permit=permits.get('PUT'),
+        store=store,
     ))
 
 
