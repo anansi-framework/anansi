@@ -91,7 +91,7 @@ async def test_storage_middleware_delete_collection(mock_storage, mocker):
 @pytest.mark.asyncio
 async def test_storage_middleware_get_count(mock_storage, mocker):
     """Test deleting record from storage middleware."""
-    from anansi.actions import GetCount
+    from anansi.actions import FetchCount
     from anansi.middleware.storage import storage_middleware
 
     async def get_count(model, context):
@@ -111,7 +111,7 @@ async def test_storage_middleware_get_count(mock_storage, mocker):
     context = {'namespace': 'public'}
 
     handler = await storage_middleware(mock_storage)(mock_next_action)
-    result = await handler(GetCount(model, context))
+    result = await handler(FetchCount(model, context))
     mock_get_count.assert_called_with(model, context)
     mock_next_action.assert_not_called()
     assert result == {'status': 'ok'}
@@ -120,7 +120,7 @@ async def test_storage_middleware_get_count(mock_storage, mocker):
 @pytest.mark.asyncio
 async def test_storage_middleware_get_records(mock_storage, mocker):
     """Test deleting record from storage middleware."""
-    from anansi.actions import GetRecords
+    from anansi.actions import FetchCollection
     from anansi.middleware.storage import storage_middleware
 
     async def get_records(model, context):
@@ -140,7 +140,7 @@ async def test_storage_middleware_get_records(mock_storage, mocker):
     context = {'namespace': 'public'}
 
     handler = await storage_middleware(mock_storage)(mock_next_action)
-    result = await handler(GetRecords(model, context))
+    result = await handler(FetchCollection(model, context))
     mock_get_records.assert_called_with(model, context)
     mock_next_action.assert_not_called()
     assert result == {'status': 'ok'}
@@ -149,7 +149,7 @@ async def test_storage_middleware_get_records(mock_storage, mocker):
 @pytest.mark.asyncio
 async def test_storage_middleware_make_store_value(mock_storage, mocker):
     """Test deleting record from storage middleware."""
-    from anansi.actions import MakeStoreValue
+    from anansi.actions import MakeStorageValue
     from anansi.middleware.storage import storage_middleware
 
     async def next_action(action):
@@ -160,7 +160,7 @@ async def test_storage_middleware_make_store_value(mock_storage, mocker):
     value = {'id': 1}
 
     handler = await storage_middleware(mock_storage)(mock_next_action)
-    result = await handler(MakeStoreValue(value))
+    result = await handler(MakeStorageValue(value))
     mock_next_action.assert_not_called()
     assert result == value
 

@@ -1,16 +1,6 @@
 """Define Store class."""
 
-from typing import List, Type
-
 from ..exceptions import StoreNotFound
-from ..actions import (
-    DeleteCollection,
-    DeleteRecord,
-    GetCount,
-    GetRecords,
-    SaveCollection,
-    SaveRecord,
-)
 from .middleware import Middleware
 
 STORE_STACK = []
@@ -50,20 +40,6 @@ class Store:
         """Pop this store off the top of the stack."""
         pop_store(self)
 
-    async def delete_collection(
-        self,
-        collection: 'Collection',
-        context: 'Context'
-    ) -> int:
-        """Dispatch the DeleteCollection action."""
-        action = DeleteCollection(collection=collection, context=context)
-        return await self.middleware.dispatch(action)
-
-    async def delete_record(self, record: 'Model', context: 'Context') -> int:
-        """Dispatch the DeleteRecord action."""
-        action = DeleteRecord(record=record, context=context)
-        return await self.middleware.dispatch(action)
-
     async def dispatch(self, action):
         """Dispatch action through the store middleware."""
         return await self.middleware.dispatch(action)
@@ -75,37 +51,6 @@ class Store:
             name=self.name,
             namespace=namespace,
         )
-
-    async def get_count(self, model: Type['Model'], context: 'Context') -> int:
-        """Dispatch GetCount action."""
-        action = GetCount(model=model, context=context)
-        return await self.middleware.dispatch(action)
-
-    async def get_records(
-        self,
-        model: Type['Model'],
-        context: 'Context'
-    ) -> List[dict]:
-        """Dispatch GetRecords action."""
-        action = GetRecords(model=model, context=context)
-        return await self.middleware.dispatch(action)
-
-    async def save_record(self, record: 'Model', context: 'Context') -> dict:
-        """Dispatch SaveRecord action."""
-        action = SaveRecord(
-            record=record,
-            context=context,
-        )
-        return await self.middleware.dispatch(action)
-
-    async def save_collection(
-        self,
-        collection: 'Collection',
-        context: 'Context'
-    ) -> list:
-        """Dispatch SaveCollection action."""
-        action = SaveCollection(collection=collection, context=context)
-        return await self.middleware.dispatch(action)
 
 
 def current_store(name: str=None) -> Store:

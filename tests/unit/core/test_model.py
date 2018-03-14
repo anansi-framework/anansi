@@ -829,14 +829,14 @@ async def test_model_fetch(mocker):
     class User(Model):
         id = Field(flags={'Key'})
 
-    async def get_records(model, context):
+    async def dispatch(action):
         return []
 
     store = Store()
     mocker.patch.object(
         store,
-        'get_records',
-        side_effect=get_records,
+        'dispatch',
+        side_effect=dispatch,
     )
     record = await User.fetch(1, store=store)
     assert record is None

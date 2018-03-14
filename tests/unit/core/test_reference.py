@@ -146,14 +146,14 @@ async def test_reference_loading_from_store(mocker):
         'user_id': 1
     })
 
-    async def get_records(model, context):
-        if model is User:
+    async def dispatch(action):
+        if action.model is User:
             return [{
                 'id': 1,
                 'username': 'jdoe',
                 'role_id': 1
             }]
-        elif model is Role:
+        elif action.model is Role:
             return [{
                 'id': 1,
                 'name': 'admin'
@@ -163,8 +163,8 @@ async def test_reference_loading_from_store(mocker):
     store = Store()
     mock_getter = mocker.patch.object(
         store,
-        'get_records',
-        side_effect=get_records
+        'dispatch',
+        side_effect=dispatch
     )
 
     with store:
@@ -206,13 +206,13 @@ async def test_reference_loading_from_store_without_source_value(mocker):
         'user_id': 1
     })
 
-    async def get_records(model, context):
-        if model is User:
+    async def dispatch(action):
+        if action.model is User:
             return [{
                 'id': 1,
                 'username': 'jdoe'
             }]
-        elif model is Role:
+        elif action.model is Role:
             return [{
                 'id': 1,
                 'name': 'admin'
@@ -222,8 +222,8 @@ async def test_reference_loading_from_store_without_source_value(mocker):
     store = Store()
     mock_getter = mocker.patch.object(
         store,
-        'get_records',
-        side_effect=get_records
+        'dispatch',
+        side_effect=dispatch
     )
 
     with store:
@@ -265,8 +265,8 @@ async def test_reference_nested_loading_from_store(mocker):
         'user_id': 1
     })
 
-    async def get_records(model, context):
-        if model is User:
+    async def dispatch(action):
+        if action.model is User:
             return [{
                 'id': 1,
                 'username': 'jdoe',
@@ -276,7 +276,7 @@ async def test_reference_nested_loading_from_store(mocker):
                     'name': 'admin'
                 }
             }]
-        elif model is Role:
+        elif action.model is Role:
             return [{
                 'id': 1,
                 'name': 'admin'
@@ -286,8 +286,8 @@ async def test_reference_nested_loading_from_store(mocker):
     store = Store()
     mock_getter = mocker.patch.object(
         store,
-        'get_records',
-        side_effect=get_records
+        'dispatch',
+        side_effect=dispatch
     )
 
     with store:

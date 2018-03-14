@@ -4,6 +4,11 @@ from collections import OrderedDict
 from typing import Any, Callable, Dict, Tuple, Union
 import asyncio
 
+from ..actions import (
+    DeleteRecord,
+    FetchCollection,
+    SaveRecord,
+)
 from ..exceptions import (
     CollectorNotFound,
     FieldNotFound,
@@ -116,7 +121,13 @@ class Model(metaclass=ModelType):
         else:
             context.setdefault('context', self.context)
             delete_context = make_context(**context)
-            return await self.context.store.delete_record(self, delete_context)
+            action = DeleteRecord(record=self, context=delete_context)
+            return await self.dispatch(action)
+
+    async def dispatch(self, action: 'Action') -> Any:
+        """Dispatch action through the store."""
+        store = self.context.store
+        return await store.dispatch(action)
 
     async def dump(self) -> dict:
         """Return the state of this model as a dictionary."""
@@ -259,7 +270,8 @@ class Model(metaclass=ModelType):
         elif self._changes:
             context.setdefault('context', self.context)
             save_context = make_context(**context)
-            values = await self.context.store.save_record(self, save_context)
+            action = SaveRecord(record=self, context=save_context)
+            values = await self.dispatch(action)
             self._changes.update(values)
             self.mark_loaded()
             return True
@@ -326,7 +338,8 @@ class Model(metaclass=ModelType):
         context['limit'] = 1
         context.setdefault('store', cls.__store__)
         fetch_context = make_context(**context)
-        records = await fetch_context.store.get_records(cls, fetch_context)
+        action = FetchCollection(model=cls, context=fetch_context)
+        records = await fetch_context.store.dispatch(action)
         data = dict(records[0]) if records else None
         if data and fetch_context.returning == ReturnType.Records:
             return cls(state=data)

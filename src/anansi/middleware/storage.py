@@ -1,10 +1,10 @@
 """Define storage_middlware class."""
-from ..actions.store import (
+from ..actions import (
     DeleteCollection,
     DeleteRecord,
-    GetCount,
-    GetRecords,
-    MakeStoreValue,
+    FetchCollection,
+    FetchCount,
+    MakeStorageValue,
     SaveCollection,
     SaveRecord,
 )
@@ -27,19 +27,19 @@ def storage_middleware(storage: 'AbstractStorage'):
                     action.context,
                 )
 
-            elif action_type is GetCount:
+            elif action_type is FetchCount:
                 return await storage.get_count(
                     action.model,
                     action.context,
                 )
 
-            elif action_type is GetRecords:
+            elif action_type is FetchCollection:
                 return await storage.get_records(
                     action.model,
                     action.context,
                 )
 
-            elif action_type is MakeStoreValue:
+            elif action_type is MakeStorageValue:
                 return action.value
 
             elif action_type is SaveRecord:

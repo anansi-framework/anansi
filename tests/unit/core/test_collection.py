@@ -215,11 +215,11 @@ async def test_collection_at_from_store(mocker):
     class User(Model):
         id = Field()
 
-    async def get_records(model, context):
+    async def dispatch(action):
         return [{'id': 1}]
 
     store = Store()
-    mocker.patch.object(store, 'get_records', side_effect=get_records)
+    mocker.patch.object(store, 'dispatch', side_effect=dispatch)
 
     collection = Collection(model=User, store=store)
     user = await collection.at(0)
@@ -235,11 +235,11 @@ async def test_collection_fetch_empty_record(mocker):
         id = Field()
         username = Field()
 
-    async def get_records(model, context):
+    async def dispatch(action):
         return []
 
     store = Store()
-    mocker.patch.object(store, 'get_records', side_effect=get_records)
+    mocker.patch.object(store, 'dispatch', side_effect=dispatch)
     collection = Collection(model=User, store=store)
     record = await collection.get_first()
     assert record is None
@@ -254,11 +254,11 @@ async def test_collection_get_first_from_store(mocker):
         id = Field()
         username = Field()
 
-    async def get_records(model, context):
+    async def dispatch(action):
         return [{'id': 1}]
 
     store = Store()
-    mocker.patch.object(store, 'get_records', side_effect=get_records)
+    mocker.patch.object(store, 'dispatch', side_effect=dispatch)
     collection = Collection(model=User, store=store)
     record = await collection.get_first()
     assert record is not None
@@ -273,11 +273,11 @@ async def test_collection_get_last_from_store(mocker):
         id = Field()
         username = Field()
 
-    async def get_records(model, context):
+    async def dispatch(action):
         return [{'id': 1}]
 
     store = Store()
-    mocker.patch.object(store, 'get_records', side_effect=get_records)
+    mocker.patch.object(store, 'dispatch', side_effect=dispatch)
     collection = Collection(model=User, store=store)
     record = await collection.get_last()
     assert record is not None
@@ -338,14 +338,14 @@ async def test_collection_dump_from_store(mocker):
         id = Field()
         username = Field()
 
-    async def get_records(model, context):
+    async def dispatch(action):
         return [
             {'id': 1, 'username': 'john.doe'},
             {'id': 2, 'username': 'jane.doe'},
         ]
 
     store = Store()
-    mocker.patch.object(store, 'get_records', side_effect=get_records)
+    mocker.patch.object(store, 'dispatch', side_effect=dispatch)
     collection = Collection(
         model=User,
         store=store,
@@ -467,15 +467,15 @@ async def test_distinct_from_store(keys, value, records, mocker):
         last_name = Field()
         is_active = Field()
 
-    async def get_records(model, context):
-        assert context.fields == keys
+    async def dispatch(action):
+        assert action.context.fields == keys
         return records
 
     store = Store()
     mocker.patch.object(
         store,
-        'get_records',
-        side_effect=get_records,
+        'dispatch',
+        side_effect=dispatch,
     )
 
     coll = Collection(model=User, store=store)
@@ -587,15 +587,15 @@ async def test_gather_from_store(keys, value, records, mocker):
         last_name = Field()
         is_active = Field()
 
-    async def get_records(model, context):
-        assert context.fields == keys
+    async def dispatch(action):
+        assert action.context.fields == keys
         return records
 
     store = Store()
     mocker.patch.object(
         store,
-        'get_records',
-        side_effect=get_records,
+        'dispatch',
+        side_effect=dispatch,
     )
 
     coll = Collection(model=User, store=store)

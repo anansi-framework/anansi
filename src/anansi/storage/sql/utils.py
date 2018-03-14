@@ -1,5 +1,5 @@
 """Define useful utility methods for manipulating sql calls."""
-from anansi.actions.store import MakeStoreValue
+from anansi.actions import MakeStorageValue
 from anansi.core.collection import Collection
 from anansi.core.context import (
     ReturnType,
@@ -326,7 +326,7 @@ async def make_store_value(
 ) -> Tuple[str, list]:
     """Convert given value to a storable query value."""
     try:
-        action = MakeStoreValue(context=context, value=value)
+        action = MakeStorageValue(context=context, value=value)
         action_value = await context.store.dispatch(action)
     except StoreNotFound:
         action_value = value

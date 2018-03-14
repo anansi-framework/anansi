@@ -2,6 +2,12 @@
 import asyncio
 from typing import Any, Generator, Type, Union
 
+from ..actions import (
+    DeleteCollection,
+    FetchCollection,
+    FetchCount,
+    SaveCollection,
+)
 from .context import (
     ReturnType,
     make_context,
@@ -49,7 +55,6 @@ class Collection:
         default_order = model.__schema__.default_order
 
         context = self.context
-        store = context.store
         order_by = context.order_by or default_order
         if reverse:
             order_by = reverse_order(order_by)
@@ -59,10 +64,8 @@ class Collection:
             order_by=order_by,
             limit=1,
         )
-        store_records = await store.get_records(
-            model,
-            record_context,
-        )
+        action = FetchCollection(model=model, context=record_context)
+        store_records = await self.dispatch(action)
         records = make_records(
             model,
             store_records,
@@ -101,10 +104,8 @@ class Collection:
             fields=keys,
             returning='data',
         )
-        records = await self.context.store.get_records(
-            model,
-            values_context,
-        )
+        action = FetchCollection(model=model, context=values_context)
+        records = await self.dispatch(action)
 
         first_key = keys[0]
         single_key = len(keys) == 1
@@ -119,9 +120,8 @@ class Collection:
         if self._records is not None:
             return [await record.dump() for record in self._records]
 
-        context = self.context
-        model = self.model
-        store_records = await context.store.get_records(model, context)
+        action = FetchCollection(model=self.model, context=self.context)
+        store_records = await self.dispatch(action)
         return list(map(dict, store_records))
 
     async def at(self, index: int) -> 'Model':
@@ -147,7 +147,13 @@ class Collection:
         """Delete the records in this collection from the store."""
         context.setdefault('context', self.context)
         delete_context = make_context(**context)
-        return await self.context.store.delete_collection(self, delete_context)
+        action = DeleteCollection(collection=self, context=delete_context)
+        return await self.dispatch(action)
+
+    async def dispatch(self, action: 'Action') -> Any:
+        """Dispatch action through the collection store."""
+        store = self.context.store
+        return await store.dispatch(action)
 
     async def distinct(self, *keys, default: Any=None) -> set:
         """Return distinct values for the given fields."""
@@ -203,10 +209,8 @@ class Collection:
         if self._records is not None:
             count = len(self._records)
         else:
-            count = await self.context.store.get_count(
-                self.model,
-                self.context,
-            )
+            action = FetchCount(model=self.model, context=self.context)
+            count = await self.dispatch(action)
 
         setattr(self, '_count', count)
         return count
@@ -267,7 +271,8 @@ class Collection:
 
         context = self.context
         model = self.model
-        store_records = await context.store.get_records(model, context)
+        action = FetchCollection(model=model, context=context)
+        store_records = await self.dispatch(action)
         iter_records = make_records(model, store_records, context)
         self._records = list(iter_records)
         return self._records
@@ -295,7 +300,8 @@ class Collection:
         """Delete the records in this collection from the store."""
         context.setdefault('context', self.context)
         save_context = make_context(**context)
-        return await self.context.store.save_collection(self, save_context)
+        action = SaveCollection(collection=self, context=save_context)
+        return await self.dispatch(action)
 
     async def set(self, key: str, value: Any):
         """Set the value for a given key on each record in the collection."""
