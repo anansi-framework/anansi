@@ -156,19 +156,19 @@ def get_dependencies() -> Tuple[list, list, dict, list]:
 
     if os.path.isfile('requirements.txt'):
         reqs, urls = parse_requirements('requirements.txt')
-        install_requires.extend(reqs)
-        links.extend(urls)
+        install_requires.extend(filter(bool, reqs))
+        links.extend(filter(bool, urls))
 
     if os.path.isfile('tests/requirements.txt'):
         reqs, urls = parse_requirements('tests/requirements.txt')
-        tests_require.extend(reqs)
-        links.extend(urls)
+        tests_require.extend(filter(bool, reqs))
+        links.extend(filter(bool, urls))
 
     for fname in glob.glob('requirements-*.txt'):
         extra_name = fname.split('-', 1)[1].split('.')[0]
         reqs, urls = parse_requirements(fname)
-        extras_require[extra_name] = reqs
-        links.extend(urls)
+        extras_require[extra_name] = filter(bool, reqs)
+        links.extend(filter(bool, urls))
 
     return install_requires, tests_require, extras_require, links
 
@@ -187,6 +187,11 @@ if __name__ == '__main__':
     install_requires, tests_require, extras_require, links = get_dependencies()
     version = get_version()
     packages = find_packages('src')
+
+    print(install_requires)
+    print(tests_require)
+    print(extras_require)
+    print(links)
 
     setup(
         author='Eric Hulser',
