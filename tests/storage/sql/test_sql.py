@@ -1,7 +1,7 @@
 """Define tests for the SQL based backend stores."""
 import pytest
 
-from .sql import SQL_ENGINES
+from .engines import ENGINES
 
 
 @pytest.fixture
@@ -20,7 +20,7 @@ def mock_sql_storage(mocker):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('name,engine', SQL_ENGINES.items())
+@pytest.mark.parametrize('name,engine', ENGINES.items())
 async def test_sql_delete_record_by_key_field(
     mock_sql_storage,
     name,
@@ -52,7 +52,7 @@ async def test_sql_delete_record_by_key_field(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('name,engine', SQL_ENGINES.items())
+@pytest.mark.parametrize('name,engine', ENGINES.items())
 async def test_sql_delete_record_by_key_index(
     mock_sql_storage,
     name,
@@ -89,7 +89,7 @@ async def test_sql_delete_record_by_key_index(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('name,engine', SQL_ENGINES.items())
+@pytest.mark.parametrize('name,engine', ENGINES.items())
 async def test_sql_delete_record_from_namespace(
     mock_sql_storage,
     name,
@@ -123,7 +123,7 @@ async def test_sql_delete_record_from_namespace(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('name,engine', SQL_ENGINES.items())
+@pytest.mark.parametrize('name,engine', ENGINES.items())
 async def test_sql_delete_record_with_translation(
     mock_sql_storage,
     name,
@@ -156,7 +156,7 @@ async def test_sql_delete_record_with_translation(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('name,engine', SQL_ENGINES.items())
+@pytest.mark.parametrize('name,engine', ENGINES.items())
 async def test_sql_create_record(
     mock_sql_storage,
     name,
@@ -202,7 +202,7 @@ async def test_sql_create_record(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('name,engine', SQL_ENGINES.items())
+@pytest.mark.parametrize('name,engine', ENGINES.items())
 async def test_sql_create_i18n_record(
     mock_sql_storage,
     name,
@@ -251,7 +251,7 @@ async def test_sql_create_i18n_record(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('name,engine', SQL_ENGINES.items())
+@pytest.mark.parametrize('name,engine', ENGINES.items())
 async def test_sql_get_record_by_key_field(mock_sql_storage, name, engine):
     """Test SQL engine getting a single record by field."""
     from anansi import Model, Field
@@ -282,7 +282,7 @@ async def test_sql_get_record_by_key_field(mock_sql_storage, name, engine):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('name,engine', SQL_ENGINES.items())
+@pytest.mark.parametrize('name,engine', ENGINES.items())
 async def test_sql_get_i18n_record_by_key_field(
     mock_sql_storage,
     name,
@@ -335,7 +335,7 @@ async def test_sql_get_i18n_record_by_key_field(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('name,engine', SQL_ENGINES.items())
+@pytest.mark.parametrize('name,engine', ENGINES.items())
 async def test_sql_get_record_by_key_index(mock_sql_storage, name, engine):
     """Test SQL engine getting a single record by index."""
     from anansi import Model, Field, Index
@@ -377,7 +377,7 @@ async def test_sql_get_record_by_key_index(mock_sql_storage, name, engine):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('name,engine', SQL_ENGINES.items())
+@pytest.mark.parametrize('name,engine', ENGINES.items())
 async def test_sql_get_record_with_column_as(
     mock_sql_storage,
     name,
@@ -413,7 +413,7 @@ async def test_sql_get_record_with_column_as(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('name,engine', SQL_ENGINES.items())
+@pytest.mark.parametrize('name,engine', ENGINES.items())
 async def test_sql_get_record_count(
     mock_sql_storage,
     name,
@@ -445,7 +445,7 @@ async def test_sql_get_record_count(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('name,engine', SQL_ENGINES.items())
+@pytest.mark.parametrize('name,engine', ENGINES.items())
 async def test_sql_get_filtered_record_count(
     mock_sql_storage,
     name,
@@ -482,7 +482,7 @@ async def test_sql_get_filtered_record_count(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('name,engine', SQL_ENGINES.items())
+@pytest.mark.parametrize('name,engine', ENGINES.items())
 async def test_sql_get_first_record(mock_sql_storage, name, engine):
     """Test SQL engine getting the first record of a collection."""
     from anansi import Model, Field
@@ -516,7 +516,7 @@ async def test_sql_get_first_record(mock_sql_storage, name, engine):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('name,engine', SQL_ENGINES.items())
+@pytest.mark.parametrize('name,engine', ENGINES.items())
 async def test_sql_get_last_record(mock_sql_storage, name, engine):
     """Test SQL engine getting last record from a collection."""
     from anansi import Model, Field

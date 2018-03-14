@@ -246,6 +246,44 @@ async def test_collection_fetch_empty_record(mocker):
 
 
 @pytest.mark.asyncio
+async def test_collection_get_first_from_store(mocker):
+    """Test fetching an empty record doesn't raise an error."""
+    from anansi import Collection, Field, Model, Store
+
+    class User(Model):
+        id = Field()
+        username = Field()
+
+    async def get_records(model, context):
+        return [{'id': 1}]
+
+    store = Store()
+    mocker.patch.object(store, 'get_records', side_effect=get_records)
+    collection = Collection(model=User, store=store)
+    record = await collection.get_first()
+    assert record is not None
+
+
+@pytest.mark.asyncio
+async def test_collection_get_last_from_store(mocker):
+    """Test fetching an empty record doesn't raise an error."""
+    from anansi import Collection, Field, Model, Store
+
+    class User(Model):
+        id = Field()
+        username = Field()
+
+    async def get_records(model, context):
+        return [{'id': 1}]
+
+    store = Store()
+    mocker.patch.object(store, 'get_records', side_effect=get_records)
+    collection = Collection(model=User, store=store)
+    record = await collection.get_last()
+    assert record is not None
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize('include,expected,returning', (
     ('count', {'count': 2}, None),
     ('first', {'first': {'id': 1, 'username': 'john.doe'}}, None),

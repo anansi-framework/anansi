@@ -77,7 +77,7 @@ class Model(metaclass=ModelType):
         return fields, references, collections
 
     def _init_changes(self, values: dict):
-        if self.is_new_record:
+        if self.is_new:
             self._changes.update(self.__schema__.default_values)
 
         if values:
@@ -236,7 +236,7 @@ class Model(metaclass=ModelType):
         }
 
     @property
-    def is_new_record(self) -> bool:
+    def is_new(self) -> bool:
         """Return whether or not this record is new or not."""
         for field in self.__schema__.key_fields:
             if self._state.get(field.name) is not None:

@@ -4,6 +4,7 @@ from typing import Any, Union
 
 from dotted.utils import dot
 
+from ..exceptions import StoreNotFound
 from .store import current_store
 
 DEFAULT_LOCALE = 'en_US'
@@ -360,8 +361,13 @@ def resolve_namespace(
         return schema.namespace
     elif context.namespace:
         return context.namespace
-    elif context.store and context.store.namespace:
-        return context.store.namespace
+    else:
+        try:
+            store = context.store
+        except StoreNotFound:
+            pass
+        else:
+            return store.namespace or default
     return default
 
 

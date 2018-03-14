@@ -352,3 +352,39 @@ def test_query_make_from_values_with_fields():
             'right': 2,
         }]
     }
+
+
+def test_query_get_left_for_schema():
+    """Test getting the left value for a Query."""
+    from anansi import Model, Field, Query as Q
+
+    class User(Model):
+        id = Field()
+        username = Field()
+
+    a = Q('username') == Q('john.doe')
+    b = Q('john.doe') == Q('username')
+
+    a_value = a.get_left_for_schema(User.__schema__)
+    b_value = b.get_left_for_schema(User.__schema__)
+
+    assert a_value is User.__schema__['username']
+    assert b_value == 'john.doe'
+
+
+def test_query_get_right_for_schema():
+    """Test getting the left value for a Query."""
+    from anansi import Model, Field, Query as Q
+
+    class User(Model):
+        id = Field()
+        username = Field()
+
+    a = Q('username') == Q('john.doe')
+    b = Q('john.doe') == Q('username')
+
+    a_value = a.get_right_for_schema(User.__schema__)
+    b_value = b.get_right_for_schema(User.__schema__)
+
+    assert a_value == 'john.doe'
+    assert b_value is User.__schema__['username']

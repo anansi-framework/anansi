@@ -85,7 +85,7 @@ class ModelType(type):
 
             schema = (
                 attributes.get('__schema__') or
-                Schema(name=clsname, inherits=inherits)
+                Schema(inherits=inherits)
             )
             if not schema.name:
                 schema.name = clsname

@@ -30,7 +30,10 @@ from .core.field import Field  # noqa: F401
 from .core.index import Index  # noqa: F401
 from .core.middleware import Middleware  # noqa: F401
 from .core.model import Model  # noqa: F401
-from .core.query import Query  # noqa: F401
+from .core.query import (  # noqa: F401
+    Query,
+    make_query_from_values,
+)
 from .core.query_group import QueryGroup  # noqa: F401
 from .core.reference import Reference  # noqa: F401
 from .core.schema import Schema  # noqa: F401

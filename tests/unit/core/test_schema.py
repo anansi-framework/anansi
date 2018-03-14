@@ -49,6 +49,7 @@ def test_schema_initialization(kwargs, values):
     expected.update(values)
 
     schema = Schema(**kwargs)
+    assert not schema.has_translations
     for key in default_props:
         assert getattr(schema, key) == expected[key]
 

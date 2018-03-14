@@ -1,1 +1,1 @@
-"""Expose backend stores."""
+"""Backend storage adapters."""

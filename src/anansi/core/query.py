@@ -81,12 +81,37 @@ class Query:
         defaults.update(values or {})
         return type(self)(**defaults)
 
+    def get_left_for_schema(self, schema: 'Schema') -> Any:
+        """Return the left value for a given schema."""
+        try:
+            field = schema.fields[self.left]
+        except KeyError:
+            pass
+        else:
+            return field
+        return self.left
+
     def get_model(self) -> Type['Model']:
         """Return model type associated with this query, if any."""
         if type(self._model) is str:
             from .model import Model
             return Model.find_model(self._model)
         return self._model
+
+    def get_right_for_schema(self, schema: 'Schema') -> Any:
+        """Return the left value for a given schema."""
+        if (
+            type(self.right) is Query and
+            self.right.right is None and
+            self.right.op is Query.Op.Is
+        ):
+            try:
+                field = schema.fields[self.right.left]
+            except KeyError:
+                pass
+            else:
+                return field
+        return self.right
 
     def is_in(self, values: Union[list, tuple, 'Collection']) -> 'Query':
         """Set op to IsIn and right to the values."""

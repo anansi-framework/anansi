@@ -1,1 +1,1 @@
-"""Define tests for store backend plugins."""
+"""Tests for storage adapters."""

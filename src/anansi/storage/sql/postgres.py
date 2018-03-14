@@ -1,13 +1,13 @@
-"""Define Postgres backend store."""
-
-import logging
-from typing import Any
-
+"""Define Postgres backend store.  Requires pip install anansi[postgres]."""
 from anansi import value_literal
+from anansi.utils import singlify
+from typing import Any, Union
+import asyncpg
+import logging
 
-from .base import (
-    AbstractSql,
-    changes_to_sql,
+from .abstract import (
+    AbstractSqlStorage,
+    generate_arg_lists,
     resolve_namespace
 )
 
@@ -15,84 +15,73 @@ from .base import (
 log = logging.getLogger(__name__)
 
 
-class Postgres(AbstractSql):
+class Postgres(AbstractSqlStorage):
     """Implement abstract store backend for PostgreSQL database."""
 
-    def __init__(
-        self,
-        *,
-        default_namespace: str='public',
-        quote: str='"',
-        port: int=5432,
-        **base_options
-    ):
-        super().__init__(
-            default_namespace=default_namespace,
-            quote=quote,
-            port=port,
-            **base_options,
-        )
+    def __init__(self, **base_options):
+        base_options.setdefault('default_namespace', 'public')
+        base_options.setdefault('port', 5432)
+        super().__init__(**base_options)
 
         self._pool = None
 
     async def create_standard_record(
         self,
-        record: 'Model',
+        schema: 'Schema',
         context: 'Context',
         changes: dict
     ) -> dict:
         """Create a standard record in the database."""
-        schema = record.__schema__
-        sql = (
-            'INSERT INTO {q}{namespace}{q}.{q}{table}{q} (\n'
+        template = (
+            'INSERT INTO {table} (\n'
             '   {columns}\n'
             ')\n'
             'VALUES({values})\n'
             'RETURNING *;'
         )
 
-        column_str, value_str, values = changes_to_sql(
+        namespace = resolve_namespace(
+            schema,
+            context,
+            default=self.default_namespace,
+        )
+        table = '.'.join(self.quote(namespace, schema.resource_name))
+        column_sql, value_sql, values = generate_arg_lists(
             changes,
             quote=self.quote
         )
 
-        statement = sql.format(
-            columns=column_str,
-            namespace=resolve_namespace(
-                schema,
-                context,
-                default=self.default_namespace
-            ),
-            q=self.quote,
-            values=value_str,
-            table=schema.resource_name,
+        sql = template.format(
+            columns=', '.join(column_sql),
+            values=', '.join(value_sql),
+            table=table,
         )
-        results = await self.execute(
-            statement,
+
+        result = await self.execute(
+            sql,
             *values,
+            method='fetch',
             connection=context.connection,
-            method='fetch'
         )
-        return results[0]
+        return result[0]
 
     async def create_i18n_record(
         self,
-        record: 'Model',
+        schema: 'Schema',
         context: 'Context',
-        standard_changes: dict,
+        changes: dict,
         i18n_changes: dict
     ) -> dict:
         """Create a translatable record in the database."""
-        schema = record.__schema__
-        sql = (
+        template = (
             'WITH standard AS (\n'
-            '   INSERT INTO {q}{namespace}{q}.{q}{table}{q} (\n'
+            '   INSERT INTO {table} (\n'
             '       {columns}\n'
             '   )\n'
             '   VALUES({values})\n'
             '   RETURNING *\n'
             '), i18n AS (\n'
-            '   INSERT INTO {q}{namespace}{q}.{q}{i18n_table}{q} (\n'
+            '   INSERT INTO {i18n_table} (\n'
             '       {i18n_columns}\n'
             '   )\n'
             '   SELECT {i18n_values} FROM standard\n'
@@ -101,8 +90,8 @@ class Postgres(AbstractSql):
             'SELECT standard.*, i18n.* FROM standard, i18n;'
         )
 
-        column_str, value_str, values = changes_to_sql(
-            standard_changes,
+        column_sql, value_sql, values = generate_arg_lists(
+            changes,
             quote=self.quote
         )
 
@@ -112,35 +101,39 @@ class Postgres(AbstractSql):
                 'standard."{}"'.format(field.code)
             )
 
-        i18n_column_str, i18n_value_str, i18n_values = changes_to_sql(
+        i18n_column_sql, i18n_value_sql, i18n_values = generate_arg_lists(
             i18n_changes,
             field_key='i18n_code',
             quote=self.quote,
-            offset=len(values)
+            offset_index=len(values)
         )
 
-        statement = sql.format(
-            columns=column_str,
-            i18n_columns=i18n_column_str,
-            i18n_values=i18n_value_str,
-            i18n_table=schema.i18n_name,
-            namespace=resolve_namespace(
-                schema,
-                context,
-                default=self.default_namespace
-            ),
-            q=self.quote,
-            values=value_str,
-            table=schema.resource_name,
+        namespace = resolve_namespace(
+            schema,
+            context,
+            default=self.default_namespace
         )
-        results = await self.execute(
-            statement,
+
+        table = '.'.join(self.quote(namespace, schema.resource_name))
+        i18n_table = '.'.join(self.quote(namespace, schema.i18n_name))
+
+        sql = template.format(
+            columns=', '.join(column_sql),
+            i18n_columns=', '.join(i18n_column_sql),
+            i18n_values=', '.join(i18n_value_sql),
+            i18n_table=i18n_table,
+            namespace=namespace,
+            values=', '.join(value_sql),
+            table=table,
+        )
+        result = await self.execute(
+            sql,
             *values,
             *i18n_values,
             connection=context.connection,
             method='fetch'
         )
-        return results[0]
+        return result[0]
 
     async def execute(
         self,
@@ -153,7 +146,11 @@ class Postgres(AbstractSql):
         log.info('psql=\n\n%s\n\nargs=%s\n-----', sql, args)
         if connection is not None:
             func = getattr(connection, method)
-            return await func(sql, *args)
+            try:
+                return await func(sql, *args)
+            except Exception:
+                log.exception(sql)
+                raise
         else:
             pool = await self.get_pool()
             async with pool.acquire() as conn:
@@ -168,7 +165,6 @@ class Postgres(AbstractSql):
     async def get_pool(self):
         """Return the connection pool for this backend."""
         if self._pool is None:
-            import asyncpg
             self._pool = await asyncpg.create_pool(
                 database=self.database,
                 host=self.host,
@@ -177,3 +173,9 @@ class Postgres(AbstractSql):
                 user=self.username
             )
         return self._pool
+
+    @staticmethod
+    @singlify
+    def quote(*text: str) -> Union[tuple, str]:
+        """Wrap text in quotes for this engine."""
+        return ['"{}"'.format(t) for t in text]

@@ -170,3 +170,18 @@ def test_context_resolve_namespace(
 
     result = resolve_namespace(schema, context, default=default_namespace)
     assert result == expected_namespace
+
+
+def test_context_reverse_order():
+    """Test order reversal."""
+    from anansi import Ordering
+    from anansi.core.context import reverse_order
+
+    assert reverse_order([('a', Ordering.Asc)]) == [('a', Ordering.Desc)]
+    assert reverse_order([
+        ('a', Ordering.Asc),
+        ('b', Ordering.Desc),
+    ]) == [
+        ('a', Ordering.Desc),
+        ('b', Ordering.Asc),
+    ]

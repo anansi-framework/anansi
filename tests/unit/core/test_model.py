@@ -451,6 +451,26 @@ async def test_model_get_key():
 
 
 @pytest.mark.asyncio
+async def test_model_get_key_dict():
+    """Test getting a key dictionary."""
+    from anansi import Field, Index, Model
+
+    class User(Model):
+        id = Field(flags={'Key'})
+
+    class UserGroup(Model):
+        group_id = Field()
+        user_id = Field()
+        by_group_and_user = Index(['group_id', 'user_id'], flags={'Key'})
+
+    u = User({'id': 1})
+    ug = UserGroup({'group_id': 1, 'user_id': 2})
+
+    assert await u.get_key_dict() == {'id': 1}
+    assert await ug.get_key_dict() == {'group_id': 1, 'user_id': 2}
+
+
+@pytest.mark.asyncio
 async def test_model_gather_nested_values(make_users):
     """Test gathering multiple values which can be nested."""
     john, jane = make_users('john', 'jane')

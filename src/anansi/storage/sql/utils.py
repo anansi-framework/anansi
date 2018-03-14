@@ -1,114 +1,386 @@
 """Define useful utility methods for manipulating sql calls."""
-from collections import OrderedDict
-from typing import Any, Dict, List, Tuple, Type, Union
-
 from anansi.actions.store import MakeStoreValue
 from anansi.core.collection import Collection
-from anansi.core.context import Ordering
+from anansi.core.context import (
+    ReturnType,
+    make_context,
+    resolve_namespace,
+)
+from anansi.core.field import Field
 from anansi.core.model import Model
-from anansi.core.query import Query
 from anansi.core.query_group import QueryGroup
+from anansi.exceptions import StoreNotFound
+from collections import OrderedDict
+from typing import Any, Callable, List, Tuple
+
+I18N_PREFIX = 'i18n.'
 
 
-DEFAULT_ORDER_MAP = {
-    Ordering.Asc: 'ASC',
-    Ordering.Desc: 'DESC'
-}
-DEFAULT_QUOTE = '`'
-DEFAULT_OP_MAP = {
-    Query.Op.After: '>',
-    Query.Op.Before: '<',
-    Query.Op.Contains: 'LIKE',
-    Query.Op.ContainsInsensitive: 'ILIKE',
-    Query.Op.Is: '=',
-    Query.Op.IsIn: 'IN',
-    Query.Op.IsNot: '!=',
-    Query.Op.IsNotIn: 'NOT IN',
-    Query.Op.GreaterThan: '>',
-    Query.Op.GreaterThanOrEqual: '>=',
-    Query.Op.LessThan: '<',
-    Query.Op.LessThanOrEqual: '<=',
-    Query.Op.Matches: '~',
-
-    QueryGroup.Op.And: 'AND',
-    QueryGroup.Op.Or: 'OR'
-}
-
-
-def args_to_sql(
-    kwargs: dict,
-    *,
-    joiner: str=', ',
-    quote: str=DEFAULT_QUOTE
-) -> Tuple[str, list]:
-    """Generate argument tuple from a dictionary."""
-    pattern = '{q}{key}{q} = {value}'
-    return (
-        joiner.join(
-            pattern.format(
-                q=quote,
-                key=key,
-                value=getattr(
-                    kwargs[key],
-                    'literal_value',
-                    '${}'.format(i + 1)
-                )
-            ) for i, key in enumerate(kwargs.keys())
-        ),
-        kwargs.values()
-    )
-
-
-def changes_to_sql(
-    changes: Dict[Union['Field', str], Any],
+def generate_arg_lists(
+    args: dict,
     *,
     field_key: str='code',
-    offset: int=0,
-    quote: str=DEFAULT_QUOTE,
-) -> Tuple[str, str, list]:
-    """Create change statements in sql."""
-    column_str = ', '.join(
-        '{0}{1}{0}'.format(quote, getattr(field, field_key, field))
-        for field in changes.keys()
-    )
-    values = changes.values()
-    value_str = ', '.join(
-        getattr(value, 'literal_value', '${}'.format(i + 1 + offset))
-        for i, value in enumerate(values)
-    )
-    out_values = [
-        value for value in values
-        if not hasattr(value, 'literal_value')
-    ]
-    return column_str, value_str, out_values
+    offset_index: int=0,
+    quote: Callable=None,
+) -> Tuple[List[str], List[str], List[Any]]:
+    """Convert dictionary to key / value SQL lists."""
+    column_sql = []
+    value_sql = []
+    out_values = []
+
+    for i, (field, value) in enumerate(args.items()):
+        column_sql.append(quote(getattr(field, field_key, field)))
+        if hasattr(value, 'literal_value'):
+            value_sql.append(str(value.literal_value))
+        else:
+            out_values.append(value)
+            value_sql.append('${}'.format(len(out_values) + offset_index))
+
+    return column_sql, value_sql, out_values
 
 
-def updates_to_sql(
-    changes: Dict[Union['Field', str], Any],
+def generate_arg_pairs(
+    args: dict,
     *,
     field_key: str='code',
-    offset: int=0,
-    quote: str=DEFAULT_QUOTE,
+    offset_index: int=0,
+    quote: Callable=None,
+) -> Tuple[List[str], List[Any]]:
+    """Convert dictionary to key / value SQL pair."""
+    column_sql, value_sql, out_values = generate_arg_lists(
+        args,
+        field_key=field_key,
+        offset_index=offset_index,
+        quote=quote,
+    )
+    pairs = list(
+        map(lambda x: '{}={}'.format(*x), zip(column_sql, value_sql)),
+    )
+    return pairs, out_values
+
+
+def generate_select_columns(
+    schema: 'Schema',
+    context: 'Context',
+    quote: Callable=None,
+) -> Tuple[str, List['Field']]:
+    """Generate field and sql column lists."""
+    if context.returning == ReturnType.Count:
+        return 'COUNT(*) AS {}'.format(quote('count')), []
+
+    all_fields = schema.fields
+    field_names = (
+        context.fields if context.fields is not None
+        else sorted(all_fields.keys())
+    )
+
+    columns = []
+    fields = []
+    for name in field_names:
+        field = all_fields[name]
+        fields.append(field)
+        i18n = field.test_flag(field.Flags.Translatable)
+
+        prefix = '' if not i18n else I18N_PREFIX
+        code = field.code if not i18n else field.i18n_code
+
+        if code != name:
+            column = ' AS '.join(quote(code, name))
+        else:
+            column = quote(code)
+
+        columns.append(prefix + column)
+
+    return ', '.join(columns), fields
+
+
+def generate_select_distinct(
+    schema: 'Schema',
+    context: 'Context',
+    quote: Callable=None,
+):
+    """Generate distinct lookup for the context information."""
+    if not context.distinct:
+        return ''
+    elif context.distinct is True:
+        return 'DISTINCT'
+
+    all_fields = schema.fields
+    columns = []
+    for name in sorted(context.distinct):
+        field = all_fields[name]
+        i18n = field.test_flag(field.Flags.Translatable)
+        prefix = '' if not i18n else I18N_PREFIX
+        code = field.code if not i18n else field.i18n_code
+        columns.append(prefix + quote(code))
+
+    return 'DISTINCT ON ({})'.format(', '.join(columns))
+
+
+def generate_select_order(
+    schema,
+    context,
+    *,
+    quote: Callable=None,
+    resolve_order: Callable=None,
+) -> str:
+    """Genreate order by clause for select statement."""
+    order_by = context.order_by
+    if not order_by:
+        return ''
+
+    all_fields = schema.fields
+    ordering = []
+    for name, order in order_by:
+        field = all_fields[name]
+        i18n = field.test_flag(field.Flags.Translatable)
+        prefix = '' if not i18n else I18N_PREFIX
+        code = field.code if not i18n else field.i18n_code
+        ordering.append('{}{} {}'.format(
+            prefix,
+            quote(code),
+            resolve_order(order)
+        ))
+    return 'ORDER BY ({})'.format(', '.join(ordering))
+
+
+async def generate_select_query(
+    schema: 'Schema',
+    context: 'Context',
+    *,
+    default_namespace: str='',
+    offset_index: int=0,
+    quote: Callable=None,
+    resolve_order: Callable=None,
+    resolve_query_op: Callable=None,
 ) -> Tuple[str, list]:
-    """Create change statements in sql."""
-    updates = ',\n'.join(
-        '{0}{1}{0}={2}'.format(
-            quote,
-            getattr(field, field_key, field),
-            getattr(value, 'literal_value', '${}'.format(i + 1 + offset)),
+    """Generate a where query statement from the context."""
+    where = context.where
+    values = []
+    if where is None or getattr(where, 'is_null', True):
+        return '', []
+    elif type(where) is QueryGroup:
+        sub_queries = []
+        for query in where.queries:
+            sub_context = make_context(context=context)
+            sub_context.where = query
+            sub_sql, sub_values = await generate_select_query(
+                schema,
+                sub_context,
+                default_namespace=default_namespace,
+                offset_index=len(values) + offset_index,
+                quote=quote,
+                resolve_query_op=resolve_query_op,
+                resolve_order=resolve_order,
+            )
+            if sub_sql:
+                sub_queries.append(sub_sql)
+                values.extend(sub_values)
+        joiner = ' {} '.format(resolve_query_op(where.op))
+        sql = '({})'.format(joiner.join(sub_queries))
+        return sql, values
+    else:
+        left = where.get_left_for_schema(schema)
+        right = where.get_right_for_schema(schema)
+
+        left_sql, left_values = await make_store_value(
+            schema,
+            context,
+            left,
+            default_namespace=default_namespace,
+            offset_index=len(values) + offset_index,
+            quote=quote,
+            resolve_order=resolve_order,
+            resolve_query_op=resolve_query_op,
         )
-        for i, (field, value) in enumerate(changes.items())
+        values.extend(left_values)
+        right_sql, right_values = await make_store_value(
+            schema,
+            context,
+            right,
+            default_namespace=default_namespace,
+            offset_index=len(values) + offset_index,
+            quote=quote,
+            resolve_order=resolve_order,
+            resolve_query_op=resolve_query_op,
+        )
+        values.extend(right_values)
+        if 'null' in (left_sql, right_sql):
+            op = where.op.value
+        else:
+            op = resolve_query_op(where.op)
+        return ' '.join((left_sql, op, right_sql)), values
+
+
+def generate_select_translation(
+    schema: 'Schema',
+    context: 'Context',
+    fields: List['Field'],
+    *,
+    namespace: str='',
+    offset_index: int=0,
+    quote: Callable=None,
+) -> Tuple[str, list]:
+    """Generate translation statement for select."""
+    has_translations = any(
+        field.test_flag(field.Flags.Translatable)
+        for field in fields
     )
-    return updates, list(changes.values())
+    if not has_translations:
+        return '', []
+
+    template = (
+        'LEFT JOIN {table} AS {prefix} '
+        'ON ({columns})'
+    )
+    table = '.'.join(quote(namespace, schema.i18n_name))
+    columns = ' AND '.join(
+        '{0}{1} = {1}'.format(I18N_PREFIX, quote(field.i18n_code))
+        for field in schema.key_fields
+    )
+    columns += ' AND {0}{1} = ${2}'.format(
+        I18N_PREFIX,
+        quote('locale'),
+        offset_index + 1,
+    )
+    sql = template.format(
+        table=table,
+        columns=columns,
+        prefix=I18N_PREFIX.strip('.'),
+    )
+    return sql, [context.locale]
 
 
-def group_changes(record: 'Model') -> Tuple[dict, dict]:
+async def generate_select_statement(
+    schema: 'Schema',
+    context: 'Context',
+    *,
+    default_namespace: str=None,
+    offset_index: int=0,
+    quote: Callable=None,
+    resolve_order: Callable=None,
+    resolve_query_op: Callable=None,
+) -> Tuple[str, list]:
+    """Generate SQL selection statement."""
+    values = []
+    template = (
+        'SELECT {distinct}{columns}\n'
+        'FROM {table}\n'
+        '{i18n}'
+        '{where}'
+        '{order}'
+        '{start}'
+        '{limit}'
+    )
+    namespace = resolve_namespace(
+        schema,
+        context,
+        default=default_namespace
+    )
+    table = '.'.join(quote(namespace, schema.resource_name))
+    columns, fields = generate_select_columns(schema, context, quote=quote)
+    distinct = generate_select_distinct(schema, context, quote=quote)
+    i18n, i18n_values = generate_select_translation(schema, context, fields)
+    values.extend(i18n_values)
+    query, query_values = await generate_select_query(
+        schema,
+        context,
+        offset_index=len(values) + offset_index,
+        quote=quote,
+        resolve_query_op=resolve_query_op,
+    )
+    values.extend(query_values)
+    order = generate_select_order(
+        schema,
+        context,
+        quote=quote,
+        resolve_order=resolve_order,
+    )
+    where = 'WHERE {}'.format(query) if query else ''
+    start = 'START {}'.format(context.start) if context.start else ''
+    limit = 'LIMIT {}'.format(context.limit) if context.limit else ''
+    sql = template.format(
+        columns=columns,
+        distinct=distinct,
+        i18n=i18n + '\n' if i18n else '',
+        where=where + '\n' if where else '',
+        order=order + '\n' if order else '',
+        start=start + '\n' if start else '',
+        limit=limit,
+        table=table,
+    ).strip() + ';'
+
+    return sql, values
+
+
+async def make_store_value(
+    schema: 'Schema',
+    context: 'Context',
+    value: Any,
+    *,
+    default_namespace: str='',
+    offset_index: int=0,
+    quote: Callable=None,
+    resolve_order: Callable=None,
+    resolve_query_op: Callable=None,
+) -> Tuple[str, list]:
+    """Convert given value to a storable query value."""
+    try:
+        action = MakeStoreValue(context=context, value=value)
+        action_value = await context.store.dispatch(action)
+    except StoreNotFound:
+        action_value = value
+
+    if isinstance(action_value, Field):
+        i18n = action_value.test_flag(Field.Flags.Translatable)
+        prefix = '' if not i18n else I18N_PREFIX
+        code = action_value.code if not i18n else action_value.i18n_code
+        return quote(prefix + code), []
+
+    elif isinstance(action_value, Collection):
+        select, select_values = await generate_select_statement(
+            schema,
+            context,
+            offset_index=offset_index,
+            quote=quote,
+            default_namespace=default_namespace,
+            resolve_order=resolve_order,
+            resolve_query_op=resolve_query_op,
+        )
+        select = '({})'.format(select.strip(';'))
+        return select, select_values
+
+    elif isinstance(action_value, Model):
+        key = await value.get_key()
+        if type(key) is list:
+            base = offset_index + 1
+            holders = ('${}'.format(base + i) for i in range(len(key)))
+            sql = '({})'.format(', '.join(holders))
+            return sql, key
+        return '${}'.format(offset_index + 1), [key]
+
+    elif type(action_value) in (tuple, list, set):
+        base = offset_index + 1
+        holders = ('${}'.format(base + i) for i in range(len(action_value)))
+        sql = '({})'.format(', '.join(holders))
+        return sql, action_value
+
+    elif action_value is None:
+        return 'null', []
+
+    elif hasattr(action_value, 'literal_value'):
+        return str(action_value.literal_value), []
+
+    else:
+        return '${}'.format(offset_index + 1), [action_value]
+
+
+def split_changes(fields: list, changes: dict) -> Tuple[dict, dict]:
     """Group changes into standard and translatable fields."""
     standard = OrderedDict()
     i18n = OrderedDict()
 
-    fields = record.__schema__.fields
-    for field_name, (_, new_value) in sorted(record.local_changes.items()):
+    for field_name, (_, new_value) in sorted(changes.items()):
         field = fields[field_name]
         if field.test_flag(field.Flags.Translatable):
             i18n[field] = new_value
@@ -116,178 +388,3 @@ def group_changes(record: 'Model') -> Tuple[dict, dict]:
             standard[field] = new_value
 
     return standard, i18n
-
-
-def fields_to_sql(
-    model: Type['Model'],
-    context: 'Context',
-    *,
-    quote: str=DEFAULT_QUOTE
-) -> Tuple[List['Field'], List[str]]:
-    """Extract fields and columns from the model and context."""
-    schema = model.__schema__
-    all_fields = schema.fields
-    field_names = (
-        context.fields if context.fields is not None
-        else sorted(all_fields.keys())
-    )
-    fields = []
-    columns = []
-    for field_name in field_names:
-        field = all_fields[field_name]
-        fields.append(field)
-        if field.code != field.name:
-            key = '{prefix}{q}{code}{q} AS {q}{name}{q}'
-        else:
-            key = '{prefix}{q}{code}{q}'
-
-        is_i18n = field.test_flag(field.Flags.Translatable)
-        columns.append(key.format(
-            code=field.i18n_code if is_i18n else field.code,
-            name=field.name,
-            prefix='i18n.' if is_i18n else '',
-            q=quote,
-        ))
-
-    return fields, columns
-
-
-async def get_query_value(
-    storage: 'AbstractStorage',
-    model: Type['Model'],
-    value: Any,
-    context: 'Context',
-    quote: str,
-    values: list,
-):
-    """Convert given value to a storable query value."""
-    try:
-        field = model.__schema__.fields[value]
-    except Exception as e:
-        pass
-    else:
-        return '{0}{1}{0}'.format(quote, field.code)
-
-    action = MakeStoreValue(value=value, context=context)
-    action_value = await context.store.dispatch(action)
-
-    if isinstance(action_value, Collection):
-        statement = await storage.get_records_statement(
-            action_value.model,
-            action_value.context,
-            values=values
-        )
-        return '({})'.format(statement)
-    elif type(action_value) is tuple:
-        base = len(values) + 1
-        values.extend(action_value)
-        return '({})'.format(
-            ', '.join(
-                '${}'.format(base + i)
-                for i in range(len(action_value))
-            )
-        )
-    elif action_value is None:
-        return 'null'
-    else:
-        values.append(action_value)
-        return getattr(
-            action_value,
-            'literal_value',
-            '${}'.format(len(values))
-        )
-
-
-async def query_to_sql(
-    storage: 'AbstractSql',
-    model: Type['Model'],
-    query: Union['Query', 'QueryGroup'],
-    context: 'Context',
-    *,
-    quote: str=DEFAULT_QUOTE,
-    op_map: Dict[Union[Query.Op, QueryGroup.Op], str]=DEFAULT_OP_MAP,
-    values: list=None
-) -> str:
-    """Convert the Query object to a SQL statement."""
-    if getattr(query, 'is_null', True):
-        return ''
-    elif isinstance(query, QueryGroup):
-        joiner = op_map[query.op]
-        sub_queries = []
-        for sub_query in query.queries:
-            sub_queries.append(
-                await query_to_sql(
-                    storage,
-                    model,
-                    sub_query,
-                    context,
-                    op_map=op_map,
-                    quote=quote,
-                    values=values
-                )
-            )
-        return '({})'.format(' {} '.format(joiner).join(sub_queries))
-    else:
-        left = await get_query_value(
-            storage,
-            model,
-            query.left,
-            context,
-            quote,
-            values,
-        )
-        right = await get_query_value(
-            storage,
-            model,
-            query.right,
-            context,
-            quote,
-            values,
-        )
-
-        if query.op is Query.Op.Is and 'null' in (left, right):
-            op = 'is'
-        elif query.op is Query.Op.IsNot and 'null' in (left, right):
-            op = 'is not'
-        else:
-            op = op_map[query.op]
-
-        return '{} {} {}'.format(left, op, right)
-
-
-def order_to_sql(
-    model: Type['Model'],
-    order: Dict[str, Ordering],
-    *,
-    order_map: Dict[Ordering, str]=DEFAULT_ORDER_MAP,
-    quote: str=DEFAULT_QUOTE
-) -> str:
-    """Convert ordering information to SQL."""
-    if not order:
-        return ''
-
-    fields = model.__schema__.fields
-    return ', '.join(
-        '{q}{field}{q} {order}'.format(
-            field=fields[field_name].code,
-            q=quote,
-            order=order_map[ordering]
-        ) for field_name, ordering in order
-    )
-
-
-async def sql_middleware(next):
-    """Process action middleware for SQL stores."""
-    async def handler(action):
-        action_type = type(action)
-
-        if action_type == MakeStoreValue:
-            value = action.value
-            if isinstance(value, Model):
-                return await value.get_key()
-            elif isinstance(value, (list, set)):
-                return tuple(value)
-            else:
-                return value
-        return await next(action)
-    return handler
