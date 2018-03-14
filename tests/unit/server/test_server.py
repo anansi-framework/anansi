@@ -78,24 +78,3 @@ def test_server_serve(mocker):
     serve(config=config)
     mock_log_setup.assert_called_with(log_config)
     assert mock_run_app.call_count == 1
-
-
-def test_server_serve_with_root(mocker):
-    """Test starting web service."""
-    from anansi.server import serve
-
-    mock_run_app = mocker.patch('anansi.server.server.web.run_app')
-    mock_log_setup = mocker.patch('logging.config.dictConfig')
-
-    log_config = {'level': 'DEBUG'}
-    config = {
-        'logging': log_config,
-        'server': {
-            'host': 'localhost',
-            'port': 1234,
-            'root': '/api/v1',
-        }
-    }
-    serve(config=config)
-    mock_log_setup.assert_called_with(log_config)
-    assert mock_run_app.call_count == 1

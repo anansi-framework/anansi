@@ -41,12 +41,6 @@ def make_app(
     if addons:
         import_plugins(app, addons)
 
-    root = config.get('server.root')
-    if root:
-        parent = web.Application(loop=loop)
-        parent.add_subapp(root, app)
-        return parent
-
     return app
 
 
