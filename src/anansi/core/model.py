@@ -118,6 +118,12 @@ class Model(metaclass=ModelType):
             delete_context = make_context(**context)
             return await self.context.store.delete_record(self, delete_context)
 
+    async def dump(self) -> dict:
+        """Return the state of this model as a dictionary."""
+        fields = self.__schema__.fields.keys()
+        values = await self.gather(*fields)
+        return dict(zip(fields, values))
+
     async def gather(self, *keys, state: dict=None) -> tuple:
         """Return a list of values for the given keys."""
         state = state or {}
@@ -160,12 +166,6 @@ class Model(metaclass=ModelType):
         collection = await collector.collect(self)
         self._collections[key] = collection
         return collection
-
-    async def get_state(self) -> dict:
-        """Return the state of this model as a dictionary."""
-        fields = self.__schema__.fields.keys()
-        values = await self.gather(*fields)
-        return dict(zip(fields, values))
 
     async def get_key(self) -> Any:
         """Return the unique key for this model."""

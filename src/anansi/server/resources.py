@@ -136,7 +136,7 @@ async def create_record(
     )
     record = model(values, context=context)
     await record.save()
-    return await record.get_state()
+    return await record.dump()
 
 
 @record_route_factory
@@ -153,13 +153,13 @@ async def get_records(
 ) -> list:
     """Handle GET endpoint for models."""
     collection = await model.select(context=context)
-    return await collection.get_state()
+    return await collection.dump()
 
 
 @record_route_factory
 async def get_record(record: 'Model', context: 'anansi.Context'=None) -> dict:
     """Serialize a record and return it."""
-    return await record.get_state()
+    return await record.dump()
 
 
 @record_route_factory
@@ -174,7 +174,7 @@ async def update_record(
     )
     await record.update(values)
     await record.save()
-    return await record.get_state()
+    return await record.dump()
 
 
 @model_route_factory
@@ -189,4 +189,4 @@ async def update_records(
     )
     collection = await model.select(context=context)
     await collection.update(values)
-    return await collection.get_state()
+    return await collection.dump()

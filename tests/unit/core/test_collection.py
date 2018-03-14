@@ -310,7 +310,7 @@ async def test_collection_get_last_from_store(mocker):
         'last': {'id': 2, 'username': 'jane.doe'},
     }, None),
 ))
-async def test_collection_get_state(include, expected, returning):
+async def test_collection_dump(include, expected, returning):
     """Test converting a collection to a dictionary state."""
     from anansi import Collection, Field, Model
 
@@ -327,10 +327,10 @@ async def test_collection_get_state(include, expected, returning):
         include=include,
         returning=returning,
     )
-    assert await collection.get_state() == expected
+    assert await collection.dump() == expected
 
 
-async def test_collection_get_state_from_store(mocker):
+async def test_collection_dump_from_store(mocker):
     """Test getting a state from a backend store."""
     from anansi import Collection, Field, Model, Store
 
@@ -350,7 +350,7 @@ async def test_collection_get_state_from_store(mocker):
         model=User,
         store=store,
     )
-    assert await collection.get_state() == [
+    assert await collection.dump() == [
         {'id': 1, 'username': 'john.doe'},
         {'id': 2, 'username': 'jane.doe'},
     ]

@@ -117,7 +117,7 @@ class Collection:
     async def _get_record_state(self):
         """Return record states for this collection."""
         if self._records is not None:
-            return [await record.get_state() for record in self._records]
+            return [await record.dump() for record in self._records]
 
         context = self.context
         model = self.model
@@ -156,6 +156,34 @@ class Collection:
         else:
             task = self._gather_from_store(keys, distinct=True)
         return {value async for value in task}
+
+    async def dump(self) -> list:
+        """Return the state of this collection as a simple list."""
+        context = self.context
+        include = dict(context.include)
+
+        if context.returning is ReturnType.Count:
+            include = {'count': None}
+        elif not include:
+            include = {'records': None}
+
+        state = {}
+        if 'count' in include:
+            state['count'] = await self.get_count()
+        if 'records' in include:
+            state['records'] = await self._get_record_state()
+        if 'first' in include:
+            first = await self.get_first()
+            first_state = await first.dump() if first else None
+            state['first'] = first_state
+        if 'last' in include:
+            last = await self.get_last()
+            last_state = await last.dump() if last else None
+            state['last'] = last_state
+
+        if len(state) == 1 and 'records' in state:
+            return state['records']
+        return state
 
     async def gather(self, *keys, default: Any=None) -> list:
         """Return a list of values from each record in the collection."""
@@ -243,34 +271,6 @@ class Collection:
         iter_records = make_records(model, store_records, context)
         self._records = list(iter_records)
         return self._records
-
-    async def get_state(self) -> list:
-        """Return the state of this collection as a simple list."""
-        context = self.context
-        include = dict(context.include)
-
-        if context.returning is ReturnType.Count:
-            include = {'count': None}
-        elif not include:
-            include = {'records': None}
-
-        state = {}
-        if 'count' in include:
-            state['count'] = await self.get_count()
-        if 'records' in include:
-            state['records'] = await self._get_record_state()
-        if 'first' in include:
-            first = await self.get_first()
-            first_state = await first.get_state() if first else None
-            state['first'] = first_state
-        if 'last' in include:
-            last = await self.get_last()
-            last_state = await last.get_state() if last else None
-            state['last'] = last_state
-
-        if len(state) == 1 and 'records' in state:
-            return state['records']
-        return state
 
     async def get_values(self, key: str, default: Any=None) -> tuple:
         """Return a list of values from each record in the collection."""
