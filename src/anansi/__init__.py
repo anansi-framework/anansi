@@ -40,6 +40,5 @@ from .core.schema import Schema  # noqa: F401
 from .core.store import (  # noqa: F401
     Store,
     current_store,
-    pop_store,
-    push_store,
+    set_current_store,
 )

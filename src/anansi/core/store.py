@@ -1,9 +1,11 @@
 """Define Store class."""
+from contextvars import ContextStack
 
 from ..exceptions import StoreNotFound
 from .middleware import Middleware
 
-STORE_STACK = []
+stack = ContextStack()
+stack.current_store = None
 
 
 class Store:
@@ -33,12 +35,13 @@ class Store:
 
     def __enter__(self):
         """Push this store onto the top of the stack."""
-        push_store(self)
+        stack.__enter__()
+        stack.current_store = self
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         """Pop this store off the top of the stack."""
-        pop_store(self)
+        stack.__exit__()
 
     async def dispatch(self, action):
         """Dispatch action through the store middleware."""
@@ -53,40 +56,14 @@ class Store:
         )
 
 
-def current_store(name: str=None) -> Store:
-    """Return the current active store."""
-    if not name:
-        try:
-            return STORE_STACK[-1]
-        except IndexError:
-            raise StoreNotFound()
-
-    for store in STORE_STACK:
-        if store.name == name:
-            return store
-    else:
+def current_store() -> Store:
+    """Return the current store based on context."""
+    store = stack.current_store
+    if store is None:
         raise StoreNotFound()
-
-
-def push_store(store: Store) -> Store:
-    """Push the store instance to the top of the stack."""
-    STORE_STACK.append(store)
     return store
 
 
-def pop_store(store: Store=None) -> Store:
-    """Pop the store instance from the end of the stack."""
-    if store is not None:
-        try:
-            STORE_STACK.remove(store)
-        except ValueError:
-            pass
-        else:
-            return store
-        return None
-
-    try:
-        return STORE_STACK.pop()
-    except IndexError:
-        pass
-    return None
+def set_current_store(store: Store):
+    """Set the current store within the context."""
+    stack.current_store = store

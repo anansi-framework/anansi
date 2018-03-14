@@ -79,8 +79,8 @@ class Context:
 
     def get_store(self) -> 'Store':
         """Return the store associated with this context."""
-        if self._store is None or type(self._store) is str:
-            return current_store(self._store)
+        if self._store is None:
+            return current_store()
         return self._store
 
     def set_limit(self, limit: int=None):
