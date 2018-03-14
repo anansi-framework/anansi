@@ -280,7 +280,14 @@ async def generate_select_statement(
     table = '.'.join(quote(namespace, schema.resource_name))
     columns, fields = generate_select_columns(schema, context, quote=quote)
     distinct = generate_select_distinct(schema, context, quote=quote)
-    i18n, i18n_values = generate_select_translation(schema, context, fields)
+    i18n, i18n_values = generate_select_translation(
+        schema,
+        context,
+        fields,
+        namespace=namespace,
+        offset_index=offset_index,
+        quote=quote,
+    )
     values.extend(i18n_values)
     query, query_values = await generate_select_query(
         schema,

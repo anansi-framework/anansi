@@ -336,7 +336,8 @@ class Model(metaclass=ModelType):
         """Fetch a single record from the store for the given key."""
         context['where'] = cls.make_fetch_query(key) & context.get('where')
         context['limit'] = 1
-        context.setdefault('store', cls.__store__)
+        if cls.__store__:
+            context.setdefault('store', cls.__store__)
         fetch_context = make_context(**context)
         action = FetchCollection(model=cls, context=fetch_context)
         records = await fetch_context.store.dispatch(action)
@@ -390,7 +391,8 @@ class Model(metaclass=ModelType):
     @classmethod
     async def select(cls, **context) -> Collection:
         """Lookup a collection of records from the store."""
-        context.setdefault('store', cls.__store__)
+        if cls.__store__:
+            context.setdefault('store', cls.__store__)
         return Collection(
             context=make_context(**context),
             model=cls,

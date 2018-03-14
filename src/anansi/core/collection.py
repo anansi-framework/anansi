@@ -115,7 +115,7 @@ class Collection:
             else:
                 yield tuple(record[key] for key in keys)
 
-    async def _get_record_state(self):
+    async def _dump_records(self):
         """Return record states for this collection."""
         if self._records is not None:
             return [await record.dump() for record in self._records]
@@ -177,7 +177,7 @@ class Collection:
         if 'count' in include:
             state['count'] = await self.get_count()
         if 'records' in include:
-            state['records'] = await self._get_record_state()
+            state['records'] = await self._dump_records()
         if 'first' in include:
             first = await self.get_first()
             first_state = await first.dump() if first else None
