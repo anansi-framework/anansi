@@ -188,11 +188,6 @@ if __name__ == '__main__':
     version = get_version()
     packages = find_packages('src')
 
-    print(install_requires)
-    print(tests_require)
-    print(extras_require)
-    print(links)
-
     setup(
         author='Eric Hulser',
         author_email='eric.hulser@gmail.com',
