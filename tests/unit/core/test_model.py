@@ -12,6 +12,39 @@ def test_model_definition():
     assert User.__schema__ is not None
 
 
+def test_model_definition_with_store():
+    """Test creating a model with custom stores."""
+    from anansi import Model, Store
+
+    a = Store()
+    b = Store()
+    c = Store()
+    d = Store()
+
+    class A(Model):
+        __store__ = a
+
+    class B(Model):
+        __store__ = b
+
+    class C(Model):
+        pass
+
+    model_a = A()
+    model_b = B()
+    model_c = C()
+
+    with c:
+        assert model_a.context.store is a
+        assert model_b.context.store is b
+        assert model_c.context.store is c
+
+    with d:
+        assert model_a.context.store is a
+        assert model_b.context.store is b
+        assert model_c.context.store is d
+
+
 def test_model_definition_with_mixins():
     """Test defining a model that uses a mixin."""
     from anansi import Model, Field, Collector, Index, Reference
@@ -731,6 +764,25 @@ async def test_model_select_collection():
 
 
 @pytest.mark.asyncio
+async def test_model_select_collection_with_store():
+    """Test selecting a collection from a model."""
+    from anansi import Model, Field, Query as Q, Store
+
+    store = Store()
+
+    class User(Model):
+        __store__ = store
+
+        id = Field()
+
+    coll = await User.select(where=Q('id') == 1)
+    assert coll.model is User
+    assert coll.context.where.left == 'id'
+    assert coll.context.where.right == 1
+    assert coll.context.store is store
+
+
+@pytest.mark.asyncio
 async def test_model_ensure_exists(mocker):
     """Test ensuring a record exists in the store."""
     from anansi import Model, Field
@@ -839,4 +891,28 @@ async def test_model_fetch(mocker):
         side_effect=dispatch,
     )
     record = await User.fetch(1, store=store)
+    assert record is None
+
+
+@pytest.mark.asyncio
+async def test_model_fetch_with_store(mocker):
+    """Test fetching records."""
+    from anansi import Model, Field, Store
+
+    store = Store()
+
+    class User(Model):
+        __store__ = store
+
+        id = Field(flags={'Key'})
+
+    async def dispatch(action):
+        return []
+
+    mocker.patch.object(
+        store,
+        'dispatch',
+        side_effect=dispatch,
+    )
+    record = await User.fetch(1)
     assert record is None

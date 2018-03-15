@@ -1,6 +1,7 @@
 """Define Postgres backend store.  Requires pip install anansi[postgres]."""
 from anansi import value_literal
 from anansi.utils import singlify
+from async_generator import asynccontextmanager
 from typing import Any, Union
 import asyncpg
 import logging
@@ -18,12 +19,29 @@ log = logging.getLogger(__name__)
 class Postgres(AbstractSqlStorage):
     """Implement abstract store backend for PostgreSQL database."""
 
-    def __init__(self, **base_options):
+    def __init__(
+        self,
+        *,
+        max_pool_size: int=10,
+        min_pool_size: int=5,
+        pool: 'asyncpg.Pool'=None,
+        use_pool: bool=None,
+        **base_options,
+    ):
         base_options.setdefault('default_namespace', 'public')
         base_options.setdefault('port', 5432)
         super().__init__(**base_options)
 
-        self._pool = None
+        self.use_pool = use_pool if use_pool is not None else bool(pool)
+        self.min_pool_size = min_pool_size
+        self.max_pool_size = max_pool_size
+        self._pool = pool
+
+    async def close(self):
+        """Close connections."""
+        if self._pool:
+            await self._pool.close()
+            self._pool = None
 
     async def create_standard_record(
         self,
@@ -144,23 +162,35 @@ class Postgres(AbstractSqlStorage):
     ):
         """Execute the given sql statement in this backend pool."""
         log.info('psql=\n\n%s\n\nargs=%s\n-----', sql, args)
-        if connection is not None:
-            func = getattr(connection, method)
+        async with self.get_connection(connection) as conn:
+            func = getattr(conn, method)
             try:
                 return await func(sql, *args)
             except Exception:
                 log.exception(sql)
                 raise
-        else:
+
+    @asynccontextmanager
+    async def get_connection(self, connection: Any=None):
+        """Return a connection for this database instance."""
+        if connection is not None:
+            yield connection
+        elif self.use_pool:
             pool = await self.get_pool()
             async with pool.acquire() as conn:
                 async with conn.transaction():
-                    func = getattr(conn, method)
-                    try:
-                        return await func(sql, *args)
-                    except Exception:
-                        log.exception(sql)
-                        raise
+                    yield conn
+        else:
+            conn = await asyncpg.connect(
+                database=self.database,
+                host=self.host,
+                loop=self.loop,
+                password=self.password,
+                port=self.port,
+                user=self.username,
+            )
+            yield conn
+            await conn.close()
 
     async def get_pool(self):
         """Return the connection pool for this backend."""
@@ -168,9 +198,12 @@ class Postgres(AbstractSqlStorage):
             self._pool = await asyncpg.create_pool(
                 database=self.database,
                 host=self.host,
+                loop=self.loop,
                 password=self.password,
                 port=self.port,
-                user=self.username
+                user=self.username,
+                min_size=self.min_pool_size,
+                max_size=self.max_pool_size,
             )
         return self._pool
 

@@ -34,8 +34,10 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
         host: str='',
         password: str='',
         port: int=0,
-        username: str=''
+        username: str='',
+        **base_kwargs,
     ):
+        super().__init__(**base_kwargs)
         self.database = database
         self.default_namespace = default_namespace
         self.host = host

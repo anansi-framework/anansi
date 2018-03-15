@@ -158,7 +158,7 @@ async def test_postgres_execute(mock_pg_storage, mocker):
         'password': 'p@ss',
         'port': 1234,
     }
-    pg = Postgres(username='user', **kw)
+    pg = Postgres(username='user', use_pool=True, **kw)
 
     result = await pg.execute('test')
     assert result == ('executed', 'test', tuple())
@@ -194,14 +194,77 @@ async def test_postgres_get_pool(mock_pg_storage, mocker):
         'host': '255.255.255.0',
         'password': 'p@ss',
         'port': 1234,
+        'loop': 'test',
     }
-    pg = Postgres(username='user', **kw)
+    pg = Postgres(
+        username='user',
+        min_pool_size=5,
+        max_pool_size=10,
+        **kw,
+    )
     pool = await pg.get_pool()
     mock_pool.assert_called_once()
-    mock_pool.assert_called_with(user='user', **kw)
+    mock_pool.assert_called_with(
+        user='user',
+        min_size=5,
+        max_size=10,
+        **kw,
+    )
     pool2 = await pg.get_pool()
     assert pool is pool2
     mock_pool.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_postgres_get_connection(mock_pg_storage, mocker):
+    """Test getting a connection pool."""
+    from anansi.storage.sql.postgres import Postgres
+
+    class Connection:
+        async def close(self):
+            pass
+
+    async def async_mock(*args, **kw):
+        return Connection()
+
+    mock_connect = mocker.patch('asyncpg.connect', side_effect=async_mock)
+    kw = {
+        'database': 'testing',
+        'host': '255.255.255.0',
+        'password': 'p@ss',
+        'port': 1234,
+        'loop': 'test',
+    }
+    pg = Postgres(
+        username='user',
+        **kw,
+    )
+    async with pg.get_connection():
+        mock_connect.assert_called_with(
+            user='user',
+            **kw,
+        )
+        mock_connect.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_postgres_connection_closing(mocker):
+    """Test closing postgres connections."""
+    from anansi.storage.sql.postgres import Postgres
+
+    class Pool:
+        async def close(self):
+            pass
+
+    async def close():
+        pass
+
+    pool = Pool()
+    mock_close = mocker.patch.object(pool, 'close', side_effect=close)
+
+    pg = Postgres(pool=pool)
+    await pg.close()
+    mock_close.assert_called_once()
 
 
 def test_postgres_quote():
