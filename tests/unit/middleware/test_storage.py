@@ -33,6 +33,7 @@ def mock_storage():
 @pytest.mark.asyncio
 async def test_storage_middleware_delete_record(mock_storage, mocker):
     """Test deleting record from storage middleware."""
+    from anansi import Store, make_context
     from anansi.actions import DeleteRecord
     from anansi.middleware.storage import storage_middleware
 
@@ -50,9 +51,12 @@ async def test_storage_middleware_delete_record(mock_storage, mocker):
     mock_next_action = MagicMock(side_effect=next_action)
 
     record = {'id': 1}
-    context = {'namespace': 'public'}
+    context = make_context(
+        namespace='public',
+        store=Store(storage=mock_storage),
+    )
 
-    handler = await storage_middleware(mock_storage)(mock_next_action)
+    handler = await storage_middleware(mock_next_action)
     result = await handler(DeleteRecord(record, context))
     mock_delete_record.assert_called_with(record, context)
     mock_next_action.assert_not_called()
@@ -62,6 +66,7 @@ async def test_storage_middleware_delete_record(mock_storage, mocker):
 @pytest.mark.asyncio
 async def test_storage_middleware_delete_collection(mock_storage, mocker):
     """Test deleting record from storage middleware."""
+    from anansi import Store, make_context
     from anansi.actions import DeleteCollection
     from anansi.middleware.storage import storage_middleware
 
@@ -79,9 +84,12 @@ async def test_storage_middleware_delete_collection(mock_storage, mocker):
     mock_next_action = MagicMock(side_effect=next_action)
 
     collection = [{'id': 1}]
-    context = {'namespace': 'public'}
+    context = make_context(
+        namespace='public',
+        store=Store(storage=mock_storage),
+    )
 
-    handler = await storage_middleware(mock_storage)(mock_next_action)
+    handler = await storage_middleware(mock_next_action)
     result = await handler(DeleteCollection(collection, context))
     mock_delete_collection.assert_called_with(collection, context)
     mock_next_action.assert_not_called()
@@ -91,6 +99,7 @@ async def test_storage_middleware_delete_collection(mock_storage, mocker):
 @pytest.mark.asyncio
 async def test_storage_middleware_get_count(mock_storage, mocker):
     """Test deleting record from storage middleware."""
+    from anansi import Store, make_context
     from anansi.actions import FetchCount
     from anansi.middleware.storage import storage_middleware
 
@@ -108,9 +117,12 @@ async def test_storage_middleware_get_count(mock_storage, mocker):
     mock_next_action = MagicMock(side_effect=next_action)
 
     model = {'id': 1}
-    context = {'namespace': 'public'}
+    context = make_context(
+        namespace='public',
+        store=Store(storage=mock_storage),
+    )
 
-    handler = await storage_middleware(mock_storage)(mock_next_action)
+    handler = await storage_middleware(mock_next_action)
     result = await handler(FetchCount(model, context))
     mock_get_count.assert_called_with(model, context)
     mock_next_action.assert_not_called()
@@ -120,6 +132,7 @@ async def test_storage_middleware_get_count(mock_storage, mocker):
 @pytest.mark.asyncio
 async def test_storage_middleware_get_records(mock_storage, mocker):
     """Test deleting record from storage middleware."""
+    from anansi import Store, make_context
     from anansi.actions import FetchCollection
     from anansi.middleware.storage import storage_middleware
 
@@ -137,9 +150,12 @@ async def test_storage_middleware_get_records(mock_storage, mocker):
     mock_next_action = MagicMock(side_effect=next_action)
 
     model = {'id': 1}
-    context = {'namespace': 'public'}
+    context = make_context(
+        namespace='public',
+        store=Store(storage=mock_storage),
+    )
 
-    handler = await storage_middleware(mock_storage)(mock_next_action)
+    handler = await storage_middleware(mock_next_action)
     result = await handler(FetchCollection(model, context))
     mock_get_records.assert_called_with(model, context)
     mock_next_action.assert_not_called()
@@ -159,7 +175,7 @@ async def test_storage_middleware_make_store_value(mock_storage, mocker):
 
     value = {'id': 1}
 
-    handler = await storage_middleware(mock_storage)(mock_next_action)
+    handler = await storage_middleware(mock_next_action)
     result = await handler(MakeStorageValue(value))
     mock_next_action.assert_not_called()
     assert result == value
@@ -168,6 +184,7 @@ async def test_storage_middleware_make_store_value(mock_storage, mocker):
 @pytest.mark.asyncio
 async def test_storage_middleware_save_record(mock_storage, mocker):
     """Test deleting record from storage middleware."""
+    from anansi import Store, make_context
     from anansi.actions import SaveRecord
     from anansi.middleware.storage import storage_middleware
 
@@ -185,9 +202,12 @@ async def test_storage_middleware_save_record(mock_storage, mocker):
     mock_next_action = MagicMock(side_effect=next_action)
 
     record = {'id': 1}
-    context = {'namespace': 'public'}
+    context = make_context(
+        namespace='public',
+        store=Store(storage=mock_storage),
+    )
 
-    handler = await storage_middleware(mock_storage)(mock_next_action)
+    handler = await storage_middleware(mock_next_action)
     result = await handler(SaveRecord(record, context))
     mock_save_record.assert_called_with(record, context)
     mock_next_action.assert_not_called()
@@ -197,6 +217,7 @@ async def test_storage_middleware_save_record(mock_storage, mocker):
 @pytest.mark.asyncio
 async def test_storage_middleware_save_collection(mock_storage, mocker):
     """Test deleting record from storage middleware."""
+    from anansi import Store, make_context
     from anansi.actions import SaveCollection
     from anansi.middleware.storage import storage_middleware
 
@@ -214,9 +235,12 @@ async def test_storage_middleware_save_collection(mock_storage, mocker):
     mock_next_action = MagicMock(side_effect=next_action)
 
     collection = [{'id': 1}]
-    context = {'namespace': 'public'}
+    context = make_context(
+        namespace='public',
+        store=Store(storage=mock_storage),
+    )
 
-    handler = await storage_middleware(mock_storage)(mock_next_action)
+    handler = await storage_middleware(mock_next_action)
     result = await handler(SaveCollection(collection, context))
     mock_save_collection.assert_called_with(collection, context)
     mock_next_action.assert_not_called()
@@ -235,7 +259,7 @@ async def test_storage_middleware_passthrough(mock_storage, mocker):
 
     action = {'type': 'test'}
 
-    handler = await storage_middleware(mock_storage)(mock_next_action)
+    handler = await storage_middleware(mock_next_action)
     result = await handler(action)
     mock_next_action.assert_called_with(action)
     assert result == action

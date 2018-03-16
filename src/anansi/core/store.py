@@ -3,6 +3,7 @@ from contextvars import ContextStack
 
 from ..exceptions import StoreNotFound
 from .middleware import Middleware
+from ..middleware.storage import storage_middleware
 
 stack = ContextStack()
 stack.current_store = None
@@ -19,19 +20,16 @@ class Store:
         name: str='',
         namespace: str=''
     ):
-        middleware = middleware or Middleware()
-        if storage:
-            try:
-                middleware.add(getattr(storage, 'middleware'))
-            except AttributeError:
-                pass
+        middleware = middleware or Middleware([storage_middleware])
 
-            from ..middleware.storage import storage_middleware
-            middleware.add(storage_middleware(storage))
+        self._middleware = middleware
+        self._storage = None
         self.middleware = middleware
         self.name = name
         self.namespace = namespace
-        self.storage = storage
+
+        if storage:
+            self.set_storage(storage)
 
     def __enter__(self):
         """Push this store onto the top of the stack."""
@@ -54,6 +52,24 @@ class Store:
             name=self.name,
             namespace=namespace,
         )
+
+    def get_storage(self) -> 'AbstractStorage':
+        """Return storage backend for this store."""
+        return self._storage
+
+    def set_storage(self, storage: 'AbstractStorage'):
+        """Set storage instance for this store."""
+        self._storage = storage
+
+        middleware = Middleware()
+        middleware.add(self._middleware)
+        try:
+            middleware.add(getattr(storage, 'middleware'))
+        except AttributeError:
+            pass
+        self.middleware = middleware
+
+    storage = property(get_storage, set_storage)
 
 
 def current_store() -> Store:

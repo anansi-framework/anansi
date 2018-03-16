@@ -10,51 +10,55 @@ from ..actions import (
 )
 
 
-def storage_middleware(storage: 'AbstractStorage'):
+async def storage_middleware(next):
     """Process middleware actions for a store."""
-    async def middleware(next):
-        async def handler(action):
-            action_type = type(action)
-            if action_type is DeleteRecord:
-                return await storage.delete_record(
-                    action.record,
-                    action.context,
-                )
+    async def handler(action):
+        action_type = type(action)
+        if action_type is DeleteRecord:
+            storage = action.context.store.storage
+            return await storage.delete_record(
+                action.record,
+                action.context,
+            )
 
-            elif action_type is DeleteCollection:
-                return await storage.delete_collection(
-                    action.collection,
-                    action.context,
-                )
+        elif action_type is DeleteCollection:
+            storage = action.context.store.storage
+            return await storage.delete_collection(
+                action.collection,
+                action.context,
+            )
 
-            elif action_type is FetchCount:
-                return await storage.get_count(
-                    action.model,
-                    action.context,
-                )
+        elif action_type is FetchCount:
+            storage = action.context.store.storage
+            return await storage.get_count(
+                action.model,
+                action.context,
+            )
 
-            elif action_type is FetchCollection:
-                return await storage.get_records(
-                    action.model,
-                    action.context,
-                )
+        elif action_type is FetchCollection:
+            storage = action.context.store.storage
+            return await storage.get_records(
+                action.model,
+                action.context,
+            )
 
-            elif action_type is MakeStorageValue:
-                return action.value
+        elif action_type is MakeStorageValue:
+            return action.value
 
-            elif action_type is SaveRecord:
-                return await storage.save_record(
-                    action.record,
-                    action.context,
-                )
+        elif action_type is SaveRecord:
+            storage = action.context.store.storage
+            return await storage.save_record(
+                action.record,
+                action.context,
+            )
 
-            elif action_type is SaveCollection:
-                return await storage.save_collection(
-                    action.collection,
-                    action.context,
-                )
+        elif action_type is SaveCollection:
+            storage = action.context.store.storage
+            return await storage.save_collection(
+                action.collection,
+                action.context,
+            )
 
-            else:
-                return await next(action)
-        return handler
-    return middleware
+        else:
+            return await next(action)
+    return handler

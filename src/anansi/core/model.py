@@ -38,7 +38,9 @@ class Model(metaclass=ModelType):
         state: dict=None,
         **context
     ):
-        context.setdefault('store', type(self).__store__)
+        if self.__store__:
+            context.setdefault('store', self.__store__)
+
         self.context = make_context(**context)
         self._state = {}
         self._changes = {}
