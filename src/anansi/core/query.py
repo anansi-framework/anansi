@@ -3,6 +3,8 @@
 from enum import Enum
 from typing import Any, Type, Union
 
+from .query_group import QueryGroup
+
 
 class QueryOp(Enum):
     """Query operators."""
@@ -134,15 +136,15 @@ class Query:
         """Set model type instance for this query."""
         self._model = model
 
-    def to_dict(self):
+    def dump(self):
         """Return the query as a dictionary."""
         left = self.left
         right = self.right
 
-        if hasattr(left, 'to_dict'):
-            left = left.to_dict()
-        if hasattr(right, 'to_dict'):
-            right = right.to_dict()
+        if type(left) in (Query, QueryGroup):
+            left = left.dump()
+        if type(right) in (Query, QueryGroup):
+            right = right.dump()
 
         if self._model and type(self._model) != str:
             model_name = self._model.__schema__.name

@@ -115,7 +115,7 @@ async def test_make_context_from_request(method, path, context):
     from anansi.server.request_helpers import make_context_from_request
     request = make_mocked_request(method, path)
     actual = await make_context_from_request(request)
-    actual_dict = actual.to_dict()
+    actual_dict = actual.dump()
     context['scope'] = {'request': request}
     for key, value in context.items():
         assert actual_dict[key] == value

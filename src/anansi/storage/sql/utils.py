@@ -73,7 +73,6 @@ def generate_select_columns(
         context.fields if context.fields is not None
         else sorted(all_fields.keys())
     )
-
     columns = []
     fields = []
     for name in field_names:
@@ -292,6 +291,7 @@ async def generate_select_statement(
     query, query_values = await generate_select_query(
         schema,
         context,
+        default_namespace=default_namespace,
         offset_index=len(values) + offset_index,
         quote=quote,
         resolve_query_op=resolve_query_op,
@@ -346,8 +346,8 @@ async def make_store_value(
 
     elif isinstance(action_value, Collection):
         select, select_values = await generate_select_statement(
-            schema,
-            context,
+            action_value.model.__schema__,
+            action_value.context,
             offset_index=offset_index,
             quote=quote,
             default_namespace=default_namespace,

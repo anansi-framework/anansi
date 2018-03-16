@@ -309,7 +309,7 @@ async def test_sql_utils_make_store_value_for_collection(mocker):
     schema = User.__schema__
     context = make_context()
 
-    coll = Collection()
+    coll = Collection(model=User)
 
     sql, values = await make_store_value(
         schema,

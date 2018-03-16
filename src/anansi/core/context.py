@@ -67,6 +67,29 @@ class Context:
         self.timezone = timezone
         self.where = where
 
+    def dump(self):
+        """Return dictionary representation of this context."""
+        out = {
+            'connection': self.connection,
+            'distinct': self.distinct,
+            'fields': self.fields,
+            'force_namespace': self.force_namespace,
+            'include': self.include,
+            'limit': self.limit,
+            'locale': self.locale,
+            'namespace': self.namespace,
+            'order_by': self.order_by,
+            'page_size': self.page_size,
+            'page': self.page,
+            'returning': self.returning,
+            'scope': self.scope,
+            'start': self.start,
+            'store': self._store,
+            'timezone': self.timezone,
+            'where': self.where.dump() if self.where else None,
+        }
+        return out
+
     def get_limit(self) -> int:
         """Return limit for this context."""
         return self.page_size or self._limit
@@ -94,29 +117,6 @@ class Context:
     def set_store(self, store: 'Store'):
         """Set local store property for this context."""
         self._store = store
-
-    def to_dict(self):
-        """Return dictionary representation of this context."""
-        out = {
-            'connection': self.connection,
-            'distinct': self.distinct,
-            'fields': self.fields,
-            'force_namespace': self.force_namespace,
-            'include': self.include,
-            'limit': self.limit,
-            'locale': self.locale,
-            'namespace': self.namespace,
-            'order_by': self.order_by,
-            'page_size': self.page_size,
-            'page': self.page,
-            'returning': self.returning,
-            'scope': self.scope,
-            'start': self.start,
-            'store': self._store,
-            'timezone': self.timezone,
-            'where': self.where.to_dict() if self.where else None,
-        }
-        return out
 
     limit = property(get_limit, set_limit)
     start = property(get_start, set_start)

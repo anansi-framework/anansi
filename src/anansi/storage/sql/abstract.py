@@ -267,8 +267,6 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
             resolve_order=self.resolve_order,
             resolve_query_op=self.resolve_query_op,
         )
-        print('running execute')
-        print(self.execute)
         return await self.execute(
             sql,
             *values,

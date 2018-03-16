@@ -225,7 +225,7 @@ def test_query_with_model():
     assert q.model is None
 
 
-def test_query_to_dict():
+def test_query_dump():
     """Test converting query to dictionary."""
     from anansi import Model, Query as Q
 
@@ -236,14 +236,14 @@ def test_query_to_dict():
     b = Q('username') == Q('display_name')
     c = Q(Q('username', model='User')) == Q('display_name', model=User)
 
-    assert a.to_dict() == {
+    assert a.dump() == {
         'type': 'query',
         'model': None,
         'op': 'is',
         'left': 'username',
         'right': 'john.doe',
     }
-    assert b.to_dict() == {
+    assert b.dump() == {
         'type': 'query',
         'model': None,
         'op': 'is',
@@ -256,7 +256,7 @@ def test_query_to_dict():
             'right': None,
         }
     }
-    assert c.to_dict() == {
+    assert c.dump() == {
         'type': 'query',
         'model': None,
         'op': 'is',
@@ -307,7 +307,7 @@ def test_query_make_from_values():
     from anansi.core.query import make_query_from_values
 
     q = make_query_from_values({'a': 1, 'b': 2})
-    assert q.to_dict() == {
+    assert q.dump() == {
         'type': 'group',
         'op': 'and',
         'queries': [{
@@ -335,7 +335,7 @@ def test_query_make_from_values_with_fields():
         Field(name='a'): 1,
         Field(name='b'): 2
     })
-    assert q.to_dict() == {
+    assert q.dump() == {
         'type': 'group',
         'op': 'and',
         'queries': [{
