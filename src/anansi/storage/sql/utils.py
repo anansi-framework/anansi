@@ -141,7 +141,7 @@ def generate_select_order(
             quote(code),
             resolve_order(order)
         ))
-    return 'ORDER BY ({})'.format(', '.join(ordering))
+    return 'ORDER BY {}'.format(', '.join(ordering))
 
 
 async def generate_select_query(

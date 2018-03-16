@@ -171,9 +171,9 @@ def test_sql_utils_generate_select_distinct(distinct, expected):
 
 @pytest.mark.parametrize('order,expected', (
     (None, ''),
-    ('+first_name,-last_name', 'ORDER BY (first_name ASC, last_name DESC)'),
-    ('+first_name', 'ORDER BY (first_name ASC)'),
-    ('-last_name', 'ORDER BY (last_name DESC)'),
+    ('+first_name,-last_name', 'ORDER BY first_name ASC, last_name DESC'),
+    ('+first_name', 'ORDER BY first_name ASC'),
+    ('-last_name', 'ORDER BY last_name DESC'),
 ))
 def test_sql_utils_generate_select_order(order, expected):
     """Test generating the select distinct SQL text."""
