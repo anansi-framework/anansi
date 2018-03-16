@@ -102,7 +102,7 @@ def generate_select_distinct(
     if not context.distinct:
         return ''
     elif context.distinct is True:
-        return 'DISTINCT'
+        return 'DISTINCT '
 
     all_fields = schema.fields
     columns = []
@@ -113,7 +113,7 @@ def generate_select_distinct(
         code = field.code if not i18n else field.i18n_code
         columns.append(prefix + quote(code))
 
-    return 'DISTINCT ON ({})'.format(', '.join(columns))
+    return 'DISTINCT ON ({}) '.format(', '.join(columns))
 
 
 def generate_select_order(
@@ -234,7 +234,7 @@ def generate_select_translation(
     )
     table = '.'.join(quote(namespace, schema.i18n_name))
     columns = ' AND '.join(
-        '{0}{1} = {1}'.format(I18N_PREFIX, quote(field.i18n_code))
+        '{0}{1} = {2}'.format(I18N_PREFIX, *quote(field.i18n_code, field.code))
         for field in schema.key_fields
     )
     columns += ' AND {0}{1} = ${2}'.format(

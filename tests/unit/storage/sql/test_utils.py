@@ -141,9 +141,9 @@ def test_sql_utils_generate_select_columns_count():
 
 @pytest.mark.parametrize('distinct,expected', (
     (None, ''),
-    (True, 'DISTINCT'),
-    (['last_name', 'first_name'], 'DISTINCT ON (first_name, last_name)'),
-    (['display'], 'DISTINCT ON (i18n.display)')
+    (True, 'DISTINCT '),
+    (['last_name', 'first_name'], 'DISTINCT ON (first_name, last_name) '),
+    (['display'], 'DISTINCT ON (i18n.display) ')
 ))
 def test_sql_utils_generate_select_distinct(distinct, expected):
     """Test generating the select distinct SQL text."""
