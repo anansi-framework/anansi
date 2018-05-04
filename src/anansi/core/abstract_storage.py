@@ -1,13 +1,20 @@
 """Define an abstract backend interface for a store."""
 from abc import ABCMeta, abstractmethod
+from anansi.core.middleware import Middleware
 from typing import List, Type
 
 
 class AbstractStorage(metaclass=ABCMeta):
     """Define abstract interface class to handle specific backend types."""
 
-    def __init__(self, loop: 'EventLoop'=None):
+    def __init__(
+        self,
+        *,
+        loop: 'EventLoop'=None,
+        middleware: 'Middleware'=None,
+    ):
         self.loop = loop
+        self.middleware = middleware or Middleware()
 
     @abstractmethod
     async def delete_record(self, record: 'Model', context: 'Context') -> int:

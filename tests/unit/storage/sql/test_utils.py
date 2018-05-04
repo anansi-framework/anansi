@@ -266,7 +266,7 @@ async def test_sql_utils_make_store_value(
     expected_values,
 ):
     """Test generating the store value."""
-    from anansi import Model, Field, make_context
+    from anansi import Model, Field, Store, make_context
     from anansi.storage.sql.utils import make_store_value
 
     class User(Model):
@@ -275,7 +275,7 @@ async def test_sql_utils_make_store_value(
         display = Field()
 
     schema = User.__schema__
-    context = make_context()
+    context = make_context(store=Store())
 
     sql, values = await make_store_value(
         schema,
@@ -290,7 +290,7 @@ async def test_sql_utils_make_store_value(
 @pytest.mark.asyncio
 async def test_sql_utils_make_store_value_for_collection(mocker):
     """Test generating the store value."""
-    from anansi import Collection, Model, Field, make_context
+    from anansi import Collection, Model, Field, Store, make_context
     from anansi.storage.sql.utils import make_store_value
 
     async def select(*args, **kw):
@@ -307,7 +307,7 @@ async def test_sql_utils_make_store_value_for_collection(mocker):
         display = Field()
 
     schema = User.__schema__
-    context = make_context()
+    context = make_context(store=Store())
 
     coll = Collection(model=User)
 
@@ -325,7 +325,7 @@ async def test_sql_utils_make_store_value_for_collection(mocker):
 @pytest.mark.asyncio
 async def test_sql_utils_make_store_value_for_model():
     """Test generating the store value."""
-    from anansi import Model, Field, make_context
+    from anansi import Model, Field, Store, make_context
     from anansi.storage.sql.utils import make_store_value
 
     class User(Model):
@@ -334,7 +334,7 @@ async def test_sql_utils_make_store_value_for_model():
         display = Field()
 
     schema = User.__schema__
-    context = make_context()
+    context = make_context(store=Store())
 
     record = User({'id': 1})
 
@@ -351,7 +351,7 @@ async def test_sql_utils_make_store_value_for_model():
 @pytest.mark.asyncio
 async def test_sql_utils_make_store_value_for_model_with_multi_key():
     """Test generating the store value."""
-    from anansi import Model, Field, Index, make_context
+    from anansi import Model, Field, Index, Store, make_context
     from anansi.storage.sql.utils import make_store_value
 
     class UserGroup(Model):
@@ -364,7 +364,7 @@ async def test_sql_utils_make_store_value_for_model_with_multi_key():
         )
 
     schema = UserGroup.__schema__
-    context = make_context()
+    context = make_context(store=Store())
 
     record = UserGroup({'user_id': 1, 'group_id': 2})
 
@@ -382,14 +382,14 @@ async def test_sql_utils_make_store_value_for_model_with_multi_key():
 @pytest.mark.asyncio
 async def test_sql_utils_make_store_value_for_model_with_literal():
     """Test generating the store value."""
-    from anansi import Model, Field, make_context, value_literal
+    from anansi import Model, Field, Store, make_context, value_literal
     from anansi.storage.sql.utils import make_store_value
 
     class User(Model):
         id = Field()
 
     schema = User.__schema__
-    context = make_context()
+    context = make_context(store=Store())
 
     sql, values = await make_store_value(
         schema,
@@ -423,6 +423,7 @@ async def test_sql_utils_generate_select_query(
     from anansi import (
         Model,
         Field,
+        Store,
         make_context,
         make_query_from_values,
     )
@@ -448,7 +449,7 @@ async def test_sql_utils_generate_select_query(
         where = make_query_from_values(where)
 
     schema = User.__schema__
-    context = make_context(where=where)
+    context = make_context(where=where, store=Store())
 
     sql, values = await generate_select_query(
         schema,

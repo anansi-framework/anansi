@@ -153,7 +153,7 @@ async def test_abstract_sql_create_record_with_translations(
 @pytest.mark.asyncio
 async def test_abstract_sql_create_i18n_record(mock_sql_storage, mocker):
     """Test create a new internationalization record."""
-    from anansi import Model, Field, make_context
+    from anansi import Model, Field, Store, make_context
 
     async def execute(*args, **kwargs):
         return [{'id': 1, 'code': 'test', 'title': 'Test'}]
@@ -171,7 +171,7 @@ async def test_abstract_sql_create_i18n_record(mock_sql_storage, mocker):
 
     await mock_sql_storage.create_i18n_record(
         Content.__schema__,
-        make_context(),
+        make_context(store=Store()),
         {'code': 'test'},
         {'title': 'Test'},
     )
@@ -189,7 +189,7 @@ async def test_abstract_sql_create_i18n_record(mock_sql_storage, mocker):
 @pytest.mark.asyncio
 async def test_abstract_sql_create_standard_record(mock_sql_storage, mocker):
     """Test create a new internationalization record."""
-    from anansi import Model, Field, make_context
+    from anansi import Model, Field, Store, make_context
 
     async def execute(*args, **kwargs):
         return [{'id': 1, 'code': 'test', 'title': 'Test'}]
@@ -207,7 +207,7 @@ async def test_abstract_sql_create_standard_record(mock_sql_storage, mocker):
 
     await mock_sql_storage.create_standard_record(
         Content.__schema__,
-        make_context(),
+        make_context(store=Store()),
         {'code': 'test', 'title': 'Test'},
     )
 
@@ -260,7 +260,7 @@ async def test_abstract_sql_delete_collection(mock_sql_storage, mocker):
 @pytest.mark.asyncio
 async def test_abstract_sql_delete_record(mock_sql_storage, mocker):
     """Test deleting a collection from sql."""
-    from anansi import Model, Field, make_context
+    from anansi import Model, Field, Store, make_context
 
     async def execute(*args, **kwargs):
         return 'DELETED 1'
@@ -278,7 +278,7 @@ async def test_abstract_sql_delete_record(mock_sql_storage, mocker):
 
     result = await mock_sql_storage.delete_record(
         Content({'id': 1}),
-        make_context(),
+        make_context(store=Store()),
     )
 
     mock_execute.assert_called_with(
@@ -295,7 +295,7 @@ async def test_abstract_sql_delete_record_with_translation(
     mocker,
 ):
     """Test deleting a collection from sql."""
-    from anansi import Model, Field, make_context
+    from anansi import Model, Field, Store, make_context
 
     async def execute(*args, **kwargs):
         return 'DELETED 1'
@@ -313,7 +313,7 @@ async def test_abstract_sql_delete_record_with_translation(
 
     result = await mock_sql_storage.delete_record(
         Content({'id': 1}),
-        make_context(),
+        make_context(store=Store()),
     )
 
     mock_execute.assert_called_with(
@@ -328,7 +328,7 @@ async def test_abstract_sql_delete_record_with_translation(
 @pytest.mark.asyncio
 async def test_abstract_sql_get_count(mock_sql_storage, mocker):
     """Test get_count method."""
-    from anansi import Model, Field, Query as Q, make_context
+    from anansi import Model, Field, Query as Q, Store, make_context
 
     async def execute(*args, **kwargs):
         return [{'count': 2}]
@@ -348,7 +348,7 @@ async def test_abstract_sql_get_count(mock_sql_storage, mocker):
 
     result = await mock_sql_storage.get_count(
         Content,
-        make_context(where=q),
+        make_context(where=q, store=Store()),
     )
 
     mock_execute.assert_called_with(
@@ -364,7 +364,7 @@ async def test_abstract_sql_get_count(mock_sql_storage, mocker):
 @pytest.mark.asyncio
 async def test_abstract_sql_get_records(mock_sql_storage, mocker):
     """Test get_records method."""
-    from anansi import Model, Field, Query as Q, make_context
+    from anansi import Model, Field, Query as Q, Store, make_context
 
     async def execute(*args, **kwargs):
         return [{'id': 1, 'code': 'a'}, {'id': 2, 'code': 'b'}]
@@ -384,7 +384,7 @@ async def test_abstract_sql_get_records(mock_sql_storage, mocker):
 
     result = await mock_sql_storage.get_records(
         Content,
-        make_context(where=q),
+        make_context(where=q, store=Store()),
     )
 
     mock_execute.assert_called_with(
@@ -510,7 +510,7 @@ async def test_abstract_sql_update_record_with_translation(
 @pytest.mark.asyncio
 async def test_abstract_sql_update_standard_record(mock_sql_storage, mocker):
     """Test create a new internationalization record."""
-    from anansi import Model, Field, make_context
+    from anansi import Model, Field, Store, make_context
 
     async def execute(*args, **kwargs):
         return [{'id': 1, 'code': 'test', 'title': 'Test'}]
@@ -530,7 +530,7 @@ async def test_abstract_sql_update_standard_record(mock_sql_storage, mocker):
 
     await mock_sql_storage.update_standard_record(
         record,
-        make_context(),
+        make_context(store=Store()),
         {'code': 'test', 'title': 'Test'},
     )
 

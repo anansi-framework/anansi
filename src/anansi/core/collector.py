@@ -49,6 +49,7 @@ class Collector:
         self,
         record: 'Model',
         ignore_method: bool=False,
+        **context,
     ) -> Collection:
         """Create collection for specific record."""
         if self.gettermethod and not ignore_method:
@@ -77,6 +78,7 @@ class Collector:
             model=self._model,
             source=record,
             where=q,
+            **context,
         )
 
     def getter(self, func: callable) -> callable:

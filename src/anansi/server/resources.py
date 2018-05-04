@@ -60,34 +60,45 @@ def add_model_resource(
     path = path or '/{}'.format(model.__schema__.resource_name)
 
     resource = app.router.add_resource(path)
-    resource.add_route('GET', get_records(
+    get_route = resource.add_route('GET', get_records(
         model,
         context_factory=context_factory,
         dumps=dumps,
         permit=permits.get('GET'),
         store=store,
     ))
-    resource.add_route('POST', create_record(
+    post_route = resource.add_route('POST', create_record(
         model,
         context_factory=context_factory,
         dumps=dumps,
         permit=permits.get('POST'),
         store=store,
     ))
-    resource.add_route('PATCH', update_records(
+    patch_route = resource.add_route('PATCH', update_records(
         model,
         context_factory=context_factory,
         dumps=dumps,
         permit=permits.get('PATCH'),
         store=store,
     ))
-    resource.add_route('PUT', update_records(
+    put_route = resource.add_route('PUT', update_records(
         model,
         context_factory=context_factory,
         dumps=dumps,
         permit=permits.get('PUT'),
         store=store,
     ))
+
+    try:
+        cors = app['aiohttp_cors']
+    except KeyError:
+        pass
+    else:
+        cors.add(resource)
+        cors.add(get_route)
+        cors.add(post_route)
+        cors.add(patch_route)
+        cors.add(put_route)
 
     return resource
 
@@ -107,34 +118,45 @@ def add_record_resource(
     path = path or '/{}/{{key}}'.format(model.__schema__.resource_name)
 
     resource = app.router.add_resource(path)
-    resource.add_route('DELETE', delete_record(
+    delete_route = resource.add_route('DELETE', delete_record(
         model,
         context_factory=context_factory,
         dumps=dumps,
         permit=permits.get('DELETE'),
         store=store,
     ))
-    resource.add_route('GET', get_record(
+    get_route = resource.add_route('GET', get_record(
         model,
         context_factory=context_factory,
         dumps=dumps,
         permit=permits.get('GET'),
         store=store,
     ))
-    resource.add_route('PATCH', update_record(
+    patch_route = resource.add_route('PATCH', update_record(
         model,
         context_factory=context_factory,
         dumps=dumps,
         permit=permits.get('PATCH'),
         store=store,
     ))
-    resource.add_route('PUT', update_record(
+    put_route = resource.add_route('PUT', update_record(
         model,
         context_factory=context_factory,
         dumps=dumps,
         permit=permits.get('PUT'),
         store=store,
     ))
+
+    try:
+        cors = app['aiohttp_cors']
+    except KeyError:
+        pass
+    else:
+        cors.add(resource)
+        cors.add(delete_route)
+        cors.add(get_route)
+        cors.add(patch_route)
+        cors.add(put_route)
 
 
 @model_route_factory

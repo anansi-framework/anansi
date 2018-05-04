@@ -12,20 +12,22 @@ from anansi.core.query import Query
 
 log = logging.getLogger(__name__)
 
-RESERVED_PARAMS = (
-    'distinct',
-    'fields',
-    'include',
-    'limit',
-    'locale',
-    'namespace',
-    'order_by',
-    'page_size',
-    'page',
-    'returning',
-    'start',
-    'timezone',
-)
+RESERVED_PARAMS = {
+    'columns': 'fields',
+    'distinct': 'distinct',
+    'expand': 'include',
+    'fields': 'fields',
+    'include': 'include',
+    'limit': 'limit',
+    'locale': 'locale',
+    'namespace': 'namespace',
+    'order_by': 'order_by',
+    'page_size': 'page_size',
+    'page': 'page',
+    'returning': 'returning',
+    'start': 'start',
+    'timezone': 'timezone',
+}
 
 
 async def get_values_from_request(
@@ -89,13 +91,13 @@ async def make_context_from_request(
     """Make new context from a request."""
     query_params = dict(request.query)
     context.setdefault('scope', {})['request'] = request
-    for word in RESERVED_PARAMS:
+    for word, prop in RESERVED_PARAMS.items():
         try:
             value = query_params.pop(word)
         except KeyError:
             pass
         else:
-            context[word] = load_param(value)
+            context[prop] = load_param(value)
 
     if query_params:
         where = Query()

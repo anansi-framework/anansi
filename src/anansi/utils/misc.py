@@ -1,6 +1,7 @@
 """Miscellaneous utilities."""
 from functools import wraps
 from typing import Any, Callable
+import copy
 
 BASIC_TYPES = {
     bool,
@@ -11,11 +12,31 @@ BASIC_TYPES = {
 }
 
 
+def dict_intersection(a: dict, b: dict) -> bool:
+    """Return whether or not one dictionary intersects another."""
+    for k, v in a:
+        if b.get(k) != v:
+            return False
+    return True
+
+
 def is_equal(a: Any, b: Any) -> bool:
     """Return whether or not a and b are equal by equality and identity."""
     if type(a) is type(b) and type(a) in BASIC_TYPES:
         return a == b
     return a is b
+
+
+def deepmerge(source: dict, target: dict):
+    """Merge two dictionaries together recursively."""
+    output = copy.deepcopy(target)
+    for key, value in source.items():
+        if type(value) is dict:
+            node = target.setdefault(key, {})
+            output[key] = deepmerge(value, node)
+        else:
+            output[key] = value
+    return output
 
 
 def singlify(func: Callable):

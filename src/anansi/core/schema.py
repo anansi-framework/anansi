@@ -2,6 +2,10 @@
 import inflection
 
 from typing import Any, Dict, List, Union
+from .collector import Collector
+from .field import Field
+from .index import Index
+from .reference import Reference
 
 
 class Schema:
@@ -50,6 +54,17 @@ class Schema:
             except KeyError:
                 pass
         raise KeyError(key)
+
+    def add(self, obj: Union[Field, Index, Reference, Collector]):
+        """Add an object to the schema."""
+        if isinstance(obj, Collector):
+            self.local_collectors[obj.name] = obj
+        elif isinstance(obj, Field):
+            self.local_fields[obj.name] = obj
+        elif isinstance(obj, Index):
+            self.local_indexes[obj.name] = obj
+        elif isinstance(obj, Reference):
+            self.local_references[obj.name] = obj
 
     @property
     def collectors(self) -> dict:

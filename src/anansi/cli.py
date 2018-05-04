@@ -2,10 +2,30 @@
 import argparse
 import inspect
 import json
+import os
 import sys
 import yaml
 
 from anansi import __version__
+from .utils import deepmerge
+
+
+def load_config(filename: str) -> dict:
+    """Load a config file."""
+    if filename.endswith('.json'):
+        with open(filename, 'r') as f:
+            conf = json.load(f)
+
+    elif filename.endswith('.yaml'):
+        with open(filename, 'r') as f:
+            conf = yaml.load(f.read())
+
+    inherits = conf.pop('inherits', None)
+    if inherits:
+        path = os.path.join(os.path.dirname(filename), inherits)
+        base = load_config(path)
+        return deepmerge(base, conf)
+    return conf
 
 
 def make_command(parser: argparse.ArgumentParser) -> callable:
@@ -115,12 +135,7 @@ def serve(
     from anansi.server import serve
 
     if config:
-        if config.endswith('.json'):
-            with open(config, 'r') as f:
-                conf = json.load(f)
-        elif config.endswith('.yaml'):
-            with open(config, 'r') as f:
-                conf = yaml.load(f.read())
+        conf = load_config(config)
     else:
         conf = None
 

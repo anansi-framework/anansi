@@ -133,9 +133,22 @@ class Model(metaclass=ModelType):
 
     async def dump(self) -> dict:
         """Return the state of this model as a dictionary."""
-        fields = self.__schema__.fields.keys()
+        fields = self.context.fields or self.__schema__.fields.keys()
         values = await self.gather(*fields)
-        return dict(zip(fields, values))
+        output = dict(zip(fields, values))
+
+        for prop, sub_include in self.context.include.items():
+            item = await self.get(
+                prop,
+                include=sub_include,
+                store=self.context.store,
+            )
+            if isinstance(item, (Model, Collection)):
+                output[prop] = await item.dump()
+            else:
+                output[prop] = item
+
+        return output
 
     async def gather(self, *keys, state: dict=None) -> tuple:
         """Return a list of values for the given keys."""
@@ -145,7 +158,7 @@ class Model(metaclass=ModelType):
             for key in keys
         ))
 
-    async def get(self, key: str, default: Any=None) -> Any:
+    async def get(self, key: str, default: Any=None, **context) -> Any:
         """Return a single value from this record."""
         curr_key, _, next_key = key.partition('.')
         try:
@@ -154,17 +167,22 @@ class Model(metaclass=ModelType):
             raise FieldNotFound(type(self), curr_key)
 
         if isinstance(schema_object, Reference):
-            result = await self.get_reference(curr_key, default)
+            result = await self.get_reference(curr_key, default, **context)
         elif isinstance(schema_object, Collector):
-            result = await self.get_collection(curr_key, default)
+            result = await self.get_collection(curr_key, default, **context)
         else:
-            result = await self.get_value(curr_key, default)
+            result = await self.get_value(curr_key, default, **context)
 
         if next_key and result is not None:
             return await result.get(next_key)
         return result
 
-    async def get_collection(self, key: str, default: Any=None) -> Any:
+    async def get_collection(
+        self,
+        key: str,
+        default: Any=None,
+        **context,
+    ) -> Any:
         """Return a collection from this record."""
         try:
             collector = self.__schema__.collectors[key]
@@ -176,7 +194,8 @@ class Model(metaclass=ModelType):
         except KeyError:
             pass
 
-        collection = await collector.collect(self)
+        key_context = self.make_sub_context(key, **context)
+        collection = await collector.collect(self, context=key_context)
         self._collections[key] = collection
         return collection
 
@@ -194,7 +213,12 @@ class Model(metaclass=ModelType):
             out[getattr(field, key_property)] = await self.get(field.name)
         return out
 
-    async def get_reference(self, key: str, default: 'Model'=None) -> 'Model':
+    async def get_reference(
+        self,
+        key: str,
+        default: 'Model'=None,
+        **context,
+    ) -> 'Model':
         """Return the reference for the given key."""
         try:
             ref = self.__schema__.references[key]
@@ -206,18 +230,27 @@ class Model(metaclass=ModelType):
         except KeyError:
             pass
 
-        field = self.__schema__[ref.source]
+        field = self.__schema__.fields[ref.source]
         ref_model = field.refers_to_model
         ref_field = field.refers_to_field
         value = await self.get(ref.source)
         if value is not None:
-            reference = await ref_model.fetch({ref_field: value})
+            key_context = self.make_sub_context(key, **context)
+            reference = await ref_model.fetch(
+                {ref_field: value},
+                context=key_context,
+            )
         else:
             reference = None
         self._references[key] = reference
         return reference
 
-    async def get_value(self, key: str, default: Any=None) -> Any:
+    async def get_value(
+        self,
+        key: str,
+        default: Any=None,
+        **context,
+    ) -> Any:
         """Return the record's value for a given field."""
         try:
             field = self.__schema__.fields[key]
@@ -255,6 +288,18 @@ class Model(metaclass=ModelType):
             if self._state.get(field.name) is not None:
                 return False
         return True
+
+    def make_sub_context(self, key: str, **context) -> 'Context':
+        """Generate new context by merging local context with options."""
+        base_context = context.pop('context', self.context)
+        include = context.pop('include', self.context.include.get(key))
+        sub_context = make_context(
+            context=base_context,
+            force_copy=True,
+            **context,
+        )
+        sub_context.include = include
+        return sub_context
 
     def mark_loaded(self):
         """Stash changes to the local state."""
@@ -345,7 +390,7 @@ class Model(metaclass=ModelType):
         records = await fetch_context.store.dispatch(action)
         data = dict(records[0]) if records else None
         if data and fetch_context.returning == ReturnType.Records:
-            return cls(state=data)
+            return cls(state=data, context=fetch_context)
         return data
 
     @classmethod

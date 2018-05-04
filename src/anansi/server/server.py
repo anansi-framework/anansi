@@ -3,10 +3,13 @@ from aiohttp import web
 from aiohttp.web_middlewares import normalize_path_middleware
 from dotted.utils import dot
 from typing import List
+import aiohttp_cors
 import importlib
-import logging
+import logging.config
 
 DEFAULT_PORT = 8080
+
+log = logging.getLogger(__name__)
 
 
 def get_default_middleware() -> list:
@@ -34,6 +37,14 @@ def make_app(
     )
 
     app['anansi.config'] = config
+
+    cors_options = config.get('server.cors')
+    if cors_options:
+        defaults = {
+            key: aiohttp_cors.ResourceOptions(**options)
+            for key, options in cors_options.items()
+        }
+        aiohttp_cors.setup(app, defaults=defaults)
 
     plugins = config.get('server.plugins', [])
     if plugins:
@@ -65,17 +76,21 @@ def serve(
     port: int=None,
 ) -> int:
     """Run aiohttp server."""
-    config = dot(config or {})
+    config = config or {}
+
+    logging_config = config.pop('logging', {})
+    logging.basicConfig()
+    if logging_config:
+        logging.config.dictConfig(logging_config)
+    else:
+        logging.basicConfig()
+
     app = make_app(
         addons=addons,
         config=config,
         loop=loop,
         middlewares=middlewares,
     )
-
-    logging_config = config.get('logging')
-    if logging_config:
-        logging.config.dictConfig(logging_config)
 
     host = host or config.get('server.host')
     port = port or config.get('server.port') or DEFAULT_PORT

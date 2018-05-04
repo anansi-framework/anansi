@@ -2,7 +2,6 @@
 
 from abc import ABCMeta, abstractmethod
 from anansi.core.abstract_storage import AbstractStorage
-from anansi.core.middleware import Middleware
 from anansi.core.context import (
     Ordering,
     ReturnType,
@@ -41,7 +40,6 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
         self.database = database
         self.default_namespace = default_namespace
         self.host = host
-        self.middleware = Middleware()
         self.password = password
         self.port = port
         self.username = username
@@ -348,7 +346,7 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
         where = context.where or record.make_fetch_query(key)
         where_sql, where_values = await generate_select_query(
             schema,
-            make_context(where=where),
+            make_context(where=where, store=context.store),
             offset_index=len(values),
             quote=self.quote,
             resolve_query_op=self.resolve_query_op,

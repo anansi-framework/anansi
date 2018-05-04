@@ -77,6 +77,9 @@ def generate_select_columns(
     fields = []
     for name in field_names:
         field = all_fields[name]
+        if field.test_flag(field.Flags.Virtual):
+            continue
+
         fields.append(field)
         i18n = field.test_flag(field.Flags.Translatable)
 
@@ -108,6 +111,8 @@ def generate_select_distinct(
     columns = []
     for name in sorted(context.distinct):
         field = all_fields[name]
+        if field.test_flag(field.Flags.Virtual):
+            continue
         i18n = field.test_flag(field.Flags.Translatable)
         prefix = '' if not i18n else I18N_PREFIX
         code = field.code if not i18n else field.i18n_code
@@ -132,6 +137,8 @@ def generate_select_order(
     ordering = []
     for name, order in order_by:
         field = all_fields[name]
+        if field.test_flag(field.Flags.Virtual):
+            continue
         i18n = field.test_flag(field.Flags.Translatable)
         prefix = '' if not i18n else I18N_PREFIX
         code = field.code if not i18n else field.i18n_code

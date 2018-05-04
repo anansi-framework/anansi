@@ -52,11 +52,11 @@ class Context:
         self._limit = limit
         self._start = start
         self._store = store
+        self._include = include or dot({})
         self.connection = connection
         self.distinct = distinct
         self.fields = fields
         self.force_namespace = force_namespace
-        self.include = include or dot({})
         self.locale = locale
         self.namespace = namespace
         self.order_by = order_by
@@ -90,6 +90,10 @@ class Context:
         }
         return out
 
+    def get_include(self) -> dict:
+        """Return include dictionary."""
+        return self._include
+
     def get_limit(self) -> int:
         """Return limit for this context."""
         return self.page_size or self._limit
@@ -106,6 +110,10 @@ class Context:
             return current_store()
         return self._store
 
+    def set_include(self, include: Union[dict, str]):
+        """Set the include property."""
+        self._include = make_include(include)
+
     def set_limit(self, limit: int=None):
         """Set limit for this context."""
         self._limit = limit
@@ -118,25 +126,36 @@ class Context:
         """Set local store property for this context."""
         self._store = store
 
+    include = property(get_include, set_include)
     limit = property(get_limit, set_limit)
     start = property(get_start, set_start)
     store = property(get_store, set_store)
+
+
+def make_include(include: Union[str, dict, list, set]) -> dict:
+    """Make a dotted dictionary from include options."""
+    out = dot({})
+    if not include:
+        return out
+    elif type(include) is str:
+        for incl in include.split(','):
+            out.setdefault(incl, {})
+    elif type(include) in (list, tuple):
+        for incl in include:
+            out.setdefault(incl, {})
+    else:
+        out.update(include)
+    return out
 
 
 def _merge_include(options: dict, base_context: Context) -> 'DottedDict':
     """Return trie containing the hierarchy of includes."""
     out = dot({})
     out.update(base_context.include if base_context else {})
-    option_include = options.get('include', {})
-    option_fields = options.get('fields', [])
+    out.update(make_include(options.get('include')))
+    option_fields = options.get('fields') or []
     if type(option_fields) is str:
         option_fields = option_fields.split(',')
-    if type(option_include) is str:
-        for incl in option_include.split(','):
-            out.setdefault(incl, {})
-    elif type(option_include) in (list, tuple):
-        for incl in option_include:
-            out.setdefault(incl, {})
     for field in option_fields:
         if '.' in field:
             out.setdefault(field.rpartition('.')[0], {})
@@ -312,10 +331,10 @@ def _merge_timezone(options: dict, base_context: Context) -> str:
         return base_context.timezone if base_context else None
 
 
-def make_context(**options) -> Context:
+def make_context(force_copy: bool=False, **options) -> Context:
     """Merge context options together."""
     base_context = options.pop('context', None)
-    if base_context and not options:
+    if base_context and not (options or force_copy):
         return base_context
     return Context(
         connection=_merge_connection(options, base_context),
@@ -342,6 +361,7 @@ def make_record_context(**options) -> Context:
     base_context = options.pop('context', None)
     return Context(
         distinct=_merge_distinct(options, base_context),
+        include=_merge_include(options, base_context),
         fields=_merge_fields(options, base_context),
         locale=_merge_locale(options, base_context),
         namespace=_merge_namespace(options, base_context),

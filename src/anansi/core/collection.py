@@ -115,14 +115,12 @@ class Collection:
             else:
                 yield tuple(record[key] for key in keys)
 
-    async def _dump_records(self):
+    async def _dump_records(self, **context):
         """Return record states for this collection."""
-        if self._records is not None:
-            return [await record.dump() for record in self._records]
-
-        action = FetchCollection(model=self.model, context=self.context)
-        store_records = await self.dispatch(action)
-        return list(map(dict, store_records))
+        return [
+            await record.dump() for record in
+            await self.get_records(**context)
+        ]
 
     async def at(self, index: int) -> 'Model':
         """Return the model at a given index."""
@@ -168,21 +166,37 @@ class Collection:
         context = self.context
         include = dict(context.include)
 
+        include_count = include.pop('count', None) is not None
+        include_first = include.pop('first', None) is not None
+        include_last = include.pop('last', None) is not None
+        include_records = include.pop('records', None) is not None or not any((
+            include_count,
+            include_first,
+            include_last,
+        ))
+
         if context.returning is ReturnType.Count:
-            include = {'count': None}
-        elif not include:
-            include = {'records': None}
+            include_count = True
+            include_first = False
+            include_last = False
+            include_records = False
 
         state = {}
-        if 'count' in include:
+        if include_count:
             state['count'] = await self.get_count()
-        if 'records' in include:
-            state['records'] = await self._dump_records()
-        if 'first' in include:
+        if include_records or include:
+            sub_include = {}
+            sub_include.update(include)
+            sub_include.update(
+                include_records if type(include_records)
+                is dict else {}
+            )
+            state['records'] = await self._dump_records(include=sub_include)
+        if include_first:
             first = await self.get_first()
             first_state = await first.dump() if first else None
             state['first'] = first_state
-        if 'last' in include:
+        if include_last:
             last = await self.get_last()
             last_state = await last.dump() if last else None
             state['last'] = last_state
@@ -264,16 +278,19 @@ class Collection:
         setattr(self, '_last', last)
         return last
 
-    async def get_records(self):
+    async def get_records(self, **context):
         """Return the records for this collection."""
         if self._records is not None:
             return self._records
 
-        context = self.context
+        record_context = make_context(
+            context=self.context,
+            **context,
+        )
         model = self.model
-        action = FetchCollection(model=model, context=context)
+        action = FetchCollection(model=model, context=record_context)
         store_records = await self.dispatch(action)
-        iter_records = make_records(model, store_records, context)
+        iter_records = make_records(model, store_records, record_context)
         self._records = list(iter_records)
         return self._records
 

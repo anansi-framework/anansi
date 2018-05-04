@@ -46,7 +46,7 @@ def test_postgres_base_configuration():
 @pytest.mark.asyncio
 async def test_postgres_create_standard_record(mock_pg_storage, mocker):
     """Test create a new internationalization record."""
-    from anansi import Model, Field, make_context
+    from anansi import Model, Field, Store, make_context
 
     async def execute(*args, **kwargs):
         return [{'id': 1, 'code': 'test', 'title': 'Test'}]
@@ -64,7 +64,7 @@ async def test_postgres_create_standard_record(mock_pg_storage, mocker):
 
     await mock_pg_storage.create_standard_record(
         Content.__schema__,
-        make_context(),
+        make_context(store=Store()),
         {'code': 'test', 'title': 'Test'},
     )
 
@@ -80,7 +80,7 @@ async def test_postgres_create_standard_record(mock_pg_storage, mocker):
 @pytest.mark.asyncio
 async def test_postgres_create_i18n_record(mock_pg_storage, mocker):
     """Test create a new internationalization record."""
-    from anansi import Model, Field, make_context
+    from anansi import Model, Field, Store, make_context
 
     async def execute(*args, **kwargs):
         return [{'id': 1, 'code': 'test', 'title': 'Test'}]
@@ -98,7 +98,7 @@ async def test_postgres_create_i18n_record(mock_pg_storage, mocker):
 
     await mock_pg_storage.create_i18n_record(
         Content.__schema__,
-        make_context(),
+        make_context(store=Store()),
         {'code': 'test'},
         {'title': 'Test'},
     )

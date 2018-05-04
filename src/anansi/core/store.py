@@ -1,12 +1,12 @@
 """Define Store class."""
-from contextvars import ContextStack
+from contextvars import ContextVar
 
 from ..exceptions import StoreNotFound
 from .middleware import Middleware
 from ..middleware.storage import storage_middleware
 
-stack = ContextStack()
-stack.current_store = None
+
+_current_store = ContextVar('current_store')
 
 
 class Store:
@@ -27,19 +27,19 @@ class Store:
         self.middleware = middleware
         self.name = name
         self.namespace = namespace
+        self._context_token = None
 
         if storage:
             self.set_storage(storage)
 
     def __enter__(self):
         """Push this store onto the top of the stack."""
-        stack.__enter__()
-        stack.current_store = self
+        self._context_token = _current_store.set(self)
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         """Pop this store off the top of the stack."""
-        stack.__exit__()
+        _current_store.reset(self._context_token)
 
     async def dispatch(self, action):
         """Dispatch action through the store middleware."""
@@ -74,12 +74,14 @@ class Store:
 
 def current_store() -> Store:
     """Return the current store based on context."""
-    store = stack.current_store
-    if store is None:
+    try:
+        store = _current_store.get()
+    except LookupError:
         raise StoreNotFound()
-    return store
+    else:
+        return store
 
 
 def set_current_store(store: Store):
     """Set the current store within the context."""
-    stack.current_store = store
+    _current_store.set(store)
