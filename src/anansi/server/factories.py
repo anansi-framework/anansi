@@ -15,18 +15,19 @@ log = logging.getLogger(__name__)
 
 def error_response(exception, **kw):
     """Create JSON error response."""
-    if isinstance(exception, HTTPException):
+    status = getattr(exception, 'status', kw.get('status', 500))
+
+    if int(status / 100) != 5:
         response = {
             'error': type(exception).__name__,
             'description': str(exception)
         }
-        status = getattr(exception, 'status', 500)
     else:
         response = {
             'error': 'UnknownServerException',
             'description': 'Unknown server error.'
         }
-        status = 500
+
     return json_response(response, status=status)
 
 
