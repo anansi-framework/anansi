@@ -9,3 +9,5 @@ build
 dist
 _version.py
 .pytest_cache
+parsetab.py
+parser.out

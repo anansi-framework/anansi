@@ -5,3 +5,6 @@ ignore=
   H301  # one import per line
   H306  # alphabetical import (using I100 from flake8-import-order plugin instead)
   I201  # spacing between imports
+
+exclude=
+  src/anansi/ext/graphql/parsetab.py
