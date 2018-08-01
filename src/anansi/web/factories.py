@@ -1,5 +1,5 @@
 """Route factories."""
-from aiohttp.web import HTTPException, HTTPForbidden, json_response
+from aiohttp.web import HTTPForbidden, json_response
 from aiohttp_security import permits
 from typing import Callable, Type, Union
 import logging

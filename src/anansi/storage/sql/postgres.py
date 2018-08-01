@@ -66,7 +66,8 @@ class Postgres(AbstractSqlStorage):
         table = '.'.join(self.quote(namespace, schema.resource_name))
         column_sql, value_sql, values = generate_arg_lists(
             changes,
-            quote=self.quote
+            context=context,
+            quote=self.quote,
         )
 
         sql = template.format(
@@ -110,7 +111,8 @@ class Postgres(AbstractSqlStorage):
 
         column_sql, value_sql, values = generate_arg_lists(
             changes,
-            quote=self.quote
+            context=context,
+            quote=self.quote,
         )
 
         i18n_changes.setdefault('locale', context.locale)
@@ -119,11 +121,16 @@ class Postgres(AbstractSqlStorage):
                 'standard."{}"'.format(field.code)
             )
 
-        i18n_column_sql, i18n_value_sql, i18n_values = generate_arg_lists(
+        (
+            i18n_column_sql,
+            i18n_value_sql,
+            i18n_values,
+        ) = generate_arg_lists(
             i18n_changes,
+            context=context,
             field_key='i18n_code',
+            offset_index=len(values),
             quote=self.quote,
-            offset_index=len(values)
         )
 
         namespace = resolve_namespace(
@@ -167,6 +174,7 @@ class Postgres(AbstractSqlStorage):
             try:
                 return await func(sql, *args)
             except Exception:
+                print(args)
                 log.exception(sql)
                 raise
 

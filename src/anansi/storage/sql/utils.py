@@ -1,5 +1,4 @@
 """Define useful utility methods for manipulating sql calls."""
-from anansi.actions import MakeStorageValue
 from anansi.core.collection import Collection
 from anansi.core.context import (
     ReturnType,
@@ -19,6 +18,7 @@ I18N_PREFIX = 'i18n.'
 def generate_arg_lists(
     args: dict,
     *,
+    context: 'Context'=None,
     field_key: str='code',
     offset_index: int=0,
     quote: Callable=None,
@@ -33,7 +33,8 @@ def generate_arg_lists(
         if hasattr(value, 'literal_value'):
             value_sql.append(str(value.literal_value))
         else:
-            out_values.append(value)
+            out_value = field.dump_value(value, context=context)
+            out_values.append(out_value)
             value_sql.append('${}'.format(len(out_values) + offset_index))
 
     return column_sql, value_sql, out_values
@@ -42,6 +43,7 @@ def generate_arg_lists(
 def generate_arg_pairs(
     args: dict,
     *,
+    context: 'Context'=None,
     field_key: str='code',
     offset_index: int=0,
     quote: Callable=None,
@@ -49,6 +51,7 @@ def generate_arg_pairs(
     """Convert dictionary to key / value SQL pair."""
     column_sql, value_sql, out_values = generate_arg_lists(
         args,
+        context=context,
         field_key=field_key,
         offset_index=offset_index,
         quote=quote,
@@ -339,11 +342,7 @@ async def make_store_value(
     resolve_query_op: Callable=None,
 ) -> Tuple[str, list]:
     """Convert given value to a storable query value."""
-    try:
-        action = MakeStorageValue(context=context, value=value)
-        action_value = await context.store.dispatch(action)
-    except StoreNotFound:
-        action_value = value
+    action_value = value
 
     if isinstance(action_value, Field):
         i18n = action_value.test_flag(Field.Flags.Translatable)

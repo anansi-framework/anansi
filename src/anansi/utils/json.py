@@ -4,7 +4,7 @@ import datetime
 import json
 
 serializers = []
-
+loads = json.loads
 
 def dumps(obj: Any, default: Callable=None, **kwargs) -> str:
     """Define custom dump method to default serialization."""

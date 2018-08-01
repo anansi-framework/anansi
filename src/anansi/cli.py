@@ -132,7 +132,7 @@ def serve(
     port: int=None,
 ):
     """Start webserver."""
-    from anansi.server import serve
+    from anansi.web import serve
 
     if config:
         conf = load_config(config)

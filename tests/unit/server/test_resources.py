@@ -17,7 +17,7 @@ import pytest
 async def test_server_resources_add_resource(method, url):
     """Test resource server registration."""
     from anansi import Model
-    from anansi.server.resources import add_resource
+    from anansi.web.resources import add_resource
     from aiohttp.web import Application
 
     class User(Model):
@@ -40,7 +40,7 @@ async def test_server_resources_add_resource(method, url):
 async def test_server_resources_add_record_resource(method, url):
     """Test resource server registration."""
     from anansi import Model
-    from anansi.server.resources import add_record_resource
+    from anansi.web.resources import add_record_resource
     from aiohttp.web import Application
 
     class User(Model):
@@ -62,7 +62,7 @@ async def test_server_resources_add_record_resource(method, url):
 async def test_server_resources_add_model_resource(method, url):
     """Test resource server registration."""
     from anansi import Model
-    from anansi.server.resources import add_model_resource
+    from anansi.web.resources import add_model_resource
     from aiohttp.web import Application
 
     class User(Model):
@@ -79,7 +79,7 @@ async def test_server_resources_add_model_resource(method, url):
 async def test_create_record(mocker):
     """Test create record factory."""
     from anansi import Field, Model
-    from anansi.server.resources import create_record
+    from anansi.web.resources import create_record
 
     async def get_json():
         return {
@@ -115,7 +115,7 @@ async def test_create_record(mocker):
 async def test_delete_record(mocker):
     """Test create record factory."""
     from anansi import Field, Model
-    from anansi.server.resources import delete_record
+    from anansi.web.resources import delete_record
 
     async def delete():
         pass
@@ -127,7 +127,7 @@ async def test_delete_record(mocker):
         id = Field()
 
     mocker.patch(
-        'anansi.server.factories.fetch_record_from_request',
+        'anansi.web.factories.fetch_record_from_request',
         side_effect=fetch_record,
     )
     mocker.patch.object(User, 'delete', side_effect=delete)
@@ -149,7 +149,7 @@ async def test_delete_record(mocker):
 async def test_get_record(mocker):
     """Test create record factory."""
     from anansi import Field, Model
-    from anansi.server.resources import get_record
+    from anansi.web.resources import get_record
 
     async def fetch_record(request, model, match_key='', context=None):
         return model({'id': 1, 'username': 'john.doe'})
@@ -159,7 +159,7 @@ async def test_get_record(mocker):
         username = Field()
 
     mocker.patch(
-        'anansi.server.factories.fetch_record_from_request',
+        'anansi.web.factories.fetch_record_from_request',
         side_effect=fetch_record,
     )
 
@@ -181,7 +181,7 @@ async def test_get_record(mocker):
 async def test_get_records(mocker):
     """Test create record factory."""
     from anansi import Collection, Field, Model
-    from anansi.server.resources import get_records
+    from anansi.web.resources import get_records
 
     class User(Model):
         id = Field()
@@ -214,7 +214,7 @@ async def test_get_records(mocker):
 async def test_update_record(mocker):
     """Test create record factory."""
     from anansi import Field, Model
-    from anansi.server.resources import update_record
+    from anansi.web.resources import update_record
 
     async def save():
         pass
@@ -241,7 +241,7 @@ async def test_update_record(mocker):
     mocker.patch.object(request, 'json', side_effect=get_json)
     mocker.patch.object(User, 'save', side_effect=save)
     mocker.patch(
-        'anansi.server.factories.fetch_record_from_request',
+        'anansi.web.factories.fetch_record_from_request',
         side_effect=fetch_record,
     )
 
@@ -257,7 +257,7 @@ async def test_update_record(mocker):
 async def test_update_records(mocker):
     """Test create record factory."""
     from anansi import Collection, Field, Model
-    from anansi.server.resources import update_records
+    from anansi.web.resources import update_records
 
     async def get_json():
         return {

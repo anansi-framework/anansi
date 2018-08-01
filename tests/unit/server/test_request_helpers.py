@@ -19,7 +19,7 @@ async def test_get_values_from_request(params, payload, expected, mocker):
     """Return values from a request based on schema."""
     from anansi import Model
     from anansi.fields import Boolean, Integer, Serial, String
-    from anansi.server.request_helpers import get_values_from_request
+    from anansi.web.request_helpers import get_values_from_request
 
     request = make_mocked_request('GET', '/')
 
@@ -51,7 +51,7 @@ async def test_get_values_from_request(params, payload, expected, mocker):
 async def test_fetch_record_from_request(key, exception, mocker):
     """Test fetching a record from a keypath."""
     from anansi import Model, Field
-    from anansi.server.request_helpers import fetch_record_from_request
+    from anansi.web.request_helpers import fetch_record_from_request
 
     request = make_mocked_request('GET', '/', match_info={'key': str(key)})
 
@@ -76,7 +76,7 @@ async def test_fetch_record_from_request(key, exception, mocker):
 
 def test_load_param():
     """Test parsing url params."""
-    from anansi.server.request_helpers import load_param
+    from anansi.web.request_helpers import load_param
 
     assert load_param('') == ''
     assert load_param('1') == 1
@@ -112,7 +112,7 @@ def test_load_param():
 ))
 async def test_make_context_from_request(method, path, context):
     """Test generating context from request params."""
-    from anansi.server.request_helpers import make_context_from_request
+    from anansi.web.request_helpers import make_context_from_request
     request = make_mocked_request(method, path)
     actual = await make_context_from_request(request)
     actual_dict = actual.dump()

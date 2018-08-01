@@ -8,14 +8,14 @@ def setup(*args):
 
 def test_server_get_default_middleware():
     """Test default middleware for the server."""
-    from anansi.server.server import get_default_middleware
+    from anansi.web.server import get_default_middleware
     middleware = get_default_middleware()
     assert len(middleware) == 1
 
 
 def test_server_make_app_config():
     """Test making an application for anansi."""
-    from anansi.server import make_app
+    from anansi.web import make_app
 
     app = make_app()
     assert app['anansi.config'] is not None
@@ -26,7 +26,7 @@ def test_server_make_app_config():
 
 def test_server_make_app_with_addons(mocker):
     """Test creating a server with addon modules."""
-    from anansi.server import make_app
+    from anansi.web import make_app
 
     module = 'tests.unit.server.test_server'
     mock_setup = mocker.patch(module + '.setup')
@@ -37,7 +37,7 @@ def test_server_make_app_with_addons(mocker):
 
 def test_server_make_app_with_plugins(mocker):
     """Test creating a server with addon modules."""
-    from anansi.server import make_app
+    from anansi.web import make_app
 
     module = 'tests.unit.server.test_server'
     mock_setup = mocker.patch(module + '.setup')
@@ -48,7 +48,7 @@ def test_server_make_app_with_plugins(mocker):
 
 def test_server_make_app_with_addons_and_plugins(mocker):
     """Test creating a server with addon modules."""
-    from anansi.server import make_app
+    from anansi.web import make_app
 
     module = 'tests.unit.server.test_server'
     mock_setup = mocker.patch(module + '.setup')
@@ -62,9 +62,9 @@ def test_server_make_app_with_addons_and_plugins(mocker):
 
 def test_server_serve(mocker):
     """Test starting web service."""
-    from anansi.server import serve
+    from anansi.web import serve
 
-    mock_run_app = mocker.patch('anansi.server.server.web.run_app')
+    mock_run_app = mocker.patch('anansi.web.server.web.run_app')
     mock_log_setup = mocker.patch('logging.config.dictConfig')
 
     log_config = {'level': 'DEBUG'}

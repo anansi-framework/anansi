@@ -21,7 +21,7 @@ import pytest
 ))
 async def test_error_response(exception, status, expected):
     """Test error response generation."""
-    from anansi.server.factories import error_response
+    from anansi.web.factories import error_response
     response = error_response(exception)
     assert response.status == status
     assert response.body == expected
@@ -31,7 +31,7 @@ async def test_error_response(exception, status, expected):
 async def test_model_route_factory(mocker):
     """Test creating a model route factory."""
     from anansi import Model, Field
-    from anansi.server.factories import model_route_factory
+    from anansi.web.factories import model_route_factory
 
     class User(Model):
         id = Field()
@@ -53,7 +53,7 @@ async def test_model_route_factory(mocker):
 async def test_model_route_factory_with_store(mocker):
     """Test creating a model route factory."""
     from anansi import Model, Field, Store
-    from anansi.server.factories import model_route_factory
+    from anansi.web.factories import model_route_factory
 
     store = Store()
 
@@ -78,13 +78,13 @@ async def test_model_route_factory_with_store(mocker):
 async def test_model_route_factory_forbidden(mocker):
     """Test creating a model route factory."""
     from anansi import Model, Field
-    from anansi.server.factories import model_route_factory
+    from anansi.web.factories import model_route_factory
 
     async def permits(request, permit, context=None):
         return False
 
     mocker.patch(
-        'anansi.server.factories.permits',
+        'anansi.web.factories.permits',
         side_effect=permits,
     )
 
@@ -109,13 +109,13 @@ async def test_model_route_factory_forbidden(mocker):
 async def test_model_route_factory_error(mocker):
     """Test creating a model route factory."""
     from anansi import Model, Field
-    from anansi.server.factories import model_route_factory
+    from anansi.web.factories import model_route_factory
 
     async def permits(request, permit, context=None):
         return True
 
     mocker.patch(
-        'anansi.server.factories.permits',
+        'anansi.web.factories.permits',
         side_effect=permits,
     )
 
@@ -140,13 +140,13 @@ async def test_model_route_factory_error(mocker):
 async def test_record_route_factory(mocker):
     """Test creating a model route factory."""
     from anansi import Model, Field
-    from anansi.server.factories import record_route_factory
+    from anansi.web.factories import record_route_factory
 
     async def fetch_record(request, model, match_key='', context=None):
         return {'id': 1}
 
     mocker.patch(
-        'anansi.server.factories.fetch_record_from_request',
+        'anansi.web.factories.fetch_record_from_request',
         side_effect=fetch_record,
     )
 
@@ -170,13 +170,13 @@ async def test_record_route_factory(mocker):
 async def test_record_route_factory_with_store(mocker):
     """Test creating a model route factory."""
     from anansi import Model, Field, Store
-    from anansi.server.factories import record_route_factory
+    from anansi.web.factories import record_route_factory
 
     async def fetch_record(request, model, match_key='', context=None):
         return {'id': 1}
 
     mocker.patch(
-        'anansi.server.factories.fetch_record_from_request',
+        'anansi.web.factories.fetch_record_from_request',
         side_effect=fetch_record,
     )
 
@@ -203,13 +203,13 @@ async def test_record_route_factory_with_store(mocker):
 async def test_record_route_factory_forbidden(mocker):
     """Test creating a model route factory."""
     from anansi import Model, Field
-    from anansi.server.factories import record_route_factory
+    from anansi.web.factories import record_route_factory
 
     async def permits(request, permit, context=None):
         return False
 
     mocker.patch(
-        'anansi.server.factories.permits',
+        'anansi.web.factories.permits',
         side_effect=permits,
     )
 
@@ -234,13 +234,13 @@ async def test_record_route_factory_forbidden(mocker):
 async def test_record_route_factory_error(mocker):
     """Test creating a model route factory."""
     from anansi import Model, Field
-    from anansi.server.factories import record_route_factory
+    from anansi.web.factories import record_route_factory
 
     async def permits(request, permit, context=None):
         return True
 
     mocker.patch(
-        'anansi.server.factories.permits',
+        'anansi.web.factories.permits',
         side_effect=permits,
     )
 

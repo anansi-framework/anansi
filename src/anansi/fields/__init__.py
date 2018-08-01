@@ -1,6 +1,6 @@
 """Define field API."""
 from .blobs import (  # noqa: F401
-    JSON,
+    Object,
 )
 from .boolean import Boolean  # noqa: F401
 from .dates import (  # noqa: F401

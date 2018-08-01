@@ -355,4 +355,7 @@ def make_records(
     else:
         model_context = make_record_context(context=context)
         for record in store_records:
-            yield model(state=dict(record), context=model_context)
+            yield model(
+                state=dict(model.load_state(record, model_context)),
+                context=model_context,
+            )

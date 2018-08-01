@@ -65,7 +65,10 @@ class Model(metaclass=ModelType):
 
             if isinstance(schema_object, Field):
                 if not schema_object.test_flag(Field.Flags.Virtual):
-                    fields[key] = value
+                    fields[key] = schema_object.load_value(
+                        value,
+                        context=self.context,
+                    )
 
             elif isinstance(schema_object, Collector):
                 collections[key] = schema_object.make_collection(
@@ -374,24 +377,43 @@ class Model(metaclass=ModelType):
             data = {}
             data.update(defaults or {})
             data.update(values)
-            record = cls(state=data)
+            record = cls(values=data)
             await record.save()
         return record
 
     @classmethod
+    def load_state(cls, values, context: 'Context'=None):
+        """Load state values for this model."""
+        schema = cls.__schema__
+        for key, value in values.items():
+            schema_object = schema[key]
+            loader = getattr(schema_object, 'load_value', None)
+            if loader:
+                yield key, loader(value, context=context)
+            else:
+                yield key, value
+
+    @classmethod
     async def fetch(cls, key: Any, **context) -> 'Model':
         """Fetch a single record from the store for the given key."""
-        context['where'] = cls.make_fetch_query(key) & context.get('where')
-        context['limit'] = 1
-        if cls.__store__:
-            context.setdefault('store', cls.__store__)
-        fetch_context = make_context(**context)
+        fetch_query = cls.make_fetch_query(key)
+        fetch_context = await cls.make_default_context(**context)
+        fetch_context.where = fetch_query & fetch_context.where
+        fetch_context.limit = 1
         action = FetchCollection(model=cls, context=fetch_context)
         records = await fetch_context.store.dispatch(action)
         data = dict(records[0]) if records else None
         if data and fetch_context.returning == ReturnType.Records:
-            return cls(state=data, context=fetch_context)
+            state = dict(cls.load_state(data, fetch_context))
+            return cls(state=state, context=fetch_context)
         return data
+
+    @classmethod
+    async def make_default_context(cls, **context) -> 'Context':
+        """Create default context for a given model."""
+        if cls.__store__:
+            context.setdefault('store', cls.__store__)
+        return make_context(**context)
 
     @classmethod
     def make_fetch_query(cls, key: Any) -> 'Query':
@@ -440,8 +462,10 @@ class Model(metaclass=ModelType):
         """Lookup a collection of records from the store."""
         if cls.__store__:
             context.setdefault('store', cls.__store__)
+
+        select_context = await cls.make_default_context(**context)
         return Collection(
-            context=make_context(**context),
+            context=select_context,
             model=cls,
         )
 

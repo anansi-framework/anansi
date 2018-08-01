@@ -103,6 +103,6 @@ def test_serve(args, values, mocker):
     """Test serve command line interface."""
     from anansi.cli import cli
 
-    mock_serve = mocker.patch('anansi.server.serve')
+    mock_serve = mocker.patch('anansi.web.serve')
     cli.run(args)
     mock_serve.assert_called_with(**values)

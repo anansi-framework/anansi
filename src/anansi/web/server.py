@@ -79,7 +79,6 @@ def serve(
     config = config or {}
 
     logging_config = config.pop('logging', {})
-    logging.basicConfig()
     if logging_config:
         logging.config.dictConfig(logging_config)
     else:

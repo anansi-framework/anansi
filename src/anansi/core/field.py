@@ -88,6 +88,10 @@ class Field:
             else:
                 self.validator(self, value)
 
+    def dump_value(self, value: Any, **context) -> Any:
+        """Dump the value for storage."""
+        return value
+
     def get_code(self) -> str:
         """Return code for this field.
 
@@ -148,6 +152,10 @@ class Field:
                 raise ModelNotFound(model_name)
             return model
         return None
+
+    def load_value(self, value: Any, **context) -> Any:
+        """Load the value from storage."""
+        return value
 
     def set_code(self, code: str):
         """Set code for this field."""

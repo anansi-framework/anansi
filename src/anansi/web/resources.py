@@ -15,6 +15,7 @@ def add_resource(
     app: 'aiohttp.UrlDispatcher',
     model: Type['Model'],
     *,
+    base_url: str='',
     context_factory: Callable=None,
     dumps: Callable=None,
     path: str=None,
@@ -22,12 +23,16 @@ def add_resource(
     store: 'Store'=None,
 ):
     """Add resource for anansi models."""
-    model_path = path or '/{}'.format(model.__schema__.resource_name)
+    model_path = path or '{}/{}'.format(
+        base_url,
+        model.__schema__.resource_name,
+    )
     record_path = '{}/{{key}}'.format(model_path)
 
     add_record_resource(
         app,
         model,
+        base_url=base_url,
         context_factory=context_factory,
         dumps=dumps,
         path=record_path,
@@ -37,6 +42,7 @@ def add_resource(
     add_model_resource(
         app,
         model,
+        base_url=base_url,
         context_factory=context_factory,
         dumps=dumps,
         path=model_path,
@@ -49,6 +55,7 @@ def add_model_resource(
     app: 'aiohttp.UrlDispatcher',
     model: Type['Model'],
     *,
+    base_url: str='',
     context_factory: Callable=None,
     dumps: Callable=None,
     path: str=None,
@@ -57,7 +64,7 @@ def add_model_resource(
 ):
     """Add resource endpoint for anansi model."""
     permits = permits or {}
-    path = path or '/{}'.format(model.__schema__.resource_name)
+    path = path or '{}/{}'.format(base_url, model.__schema__.resource_name)
 
     resource = app.router.add_resource(path)
     get_route = resource.add_route('GET', get_records(
@@ -107,6 +114,7 @@ def add_record_resource(
     app: 'aiohttp.UrlDispatcher',
     model: Type['Model'],
     *,
+    base_url: str='',
     context_factory: Callable=None,
     dumps: Callable=None,
     path: str=None,
@@ -115,7 +123,10 @@ def add_record_resource(
 ):
     """Add resource endpoint for aiob records."""
     permits = permits or {}
-    path = path or '/{}/{{key}}'.format(model.__schema__.resource_name)
+    path = path or '{}/{}/{{key}}'.format(
+        base_url,
+        model.__schema__.resource_name,
+    )
 
     resource = app.router.add_resource(path)
     delete_route = resource.add_route('DELETE', delete_record(

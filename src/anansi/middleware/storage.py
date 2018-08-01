@@ -4,7 +4,6 @@ from ..actions import (
     DeleteRecord,
     FetchCollection,
     FetchCount,
-    MakeStorageValue,
     SaveCollection,
     SaveRecord,
 )
@@ -41,9 +40,6 @@ async def storage_middleware(next):
                 action.model,
                 action.context,
             )
-
-        elif action_type is MakeStorageValue:
-            return action.value
 
         elif action_type is SaveRecord:
             storage = action.context.store.storage

@@ -37,6 +37,7 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
         **base_kwargs,
     ):
         super().__init__(**base_kwargs)
+
         self.database = database
         self.default_namespace = default_namespace
         self.host = host
@@ -96,13 +97,19 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
         table = '.'.join(self.quote(namespace, schema.resource_name))
         column_sql, value_sql, values = generate_arg_lists(
             changes,
+            context=context,
             quote=self.quote,
         )
 
         i18n_table = '.'.join(self.quote(namespace, schema.i18n_name))
         i18n_changes.setdefault('locale', context.locale)
-        i18n_column_sql, i18n_value_sql, i18n_values = generate_arg_lists(
+        (
+            i18n_column_sql,
+            i18n_value_sql,
+            i18n_values,
+        ) = generate_arg_lists(
             i18n_changes,
+            context=context,
             field_key='i18n_code',
             offset_index=len(values),
             quote=self.quote,
@@ -148,6 +155,7 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
         table = '.'.join(self.quote(namespace, schema.resource_name))
         column_sql, value_sql, values = generate_arg_lists(
             changes,
+            context=context,
             quote=self.quote,
         )
 
@@ -179,6 +187,7 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
         keys = await record.get_key_dict(key_property='code')
         pairs, values = generate_arg_pairs(
             keys,
+            context=context,
             quote=self.quote,
         )
         namespace = resolve_namespace(
@@ -202,6 +211,7 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
             i18n_keys = await record.get_key_dict(key_property='i18n_code')
             i18n_pairs, i18n_values = generate_arg_pairs(
                 i18n_keys,
+                context=context,
                 offset_index=len(values),
                 quote=self.quote,
             )
@@ -332,6 +342,7 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
         schema = record.__schema__
         pairs, values = generate_arg_pairs(
             changes,
+            context=context,
             quote=self.quote
         )
         namespace = resolve_namespace(

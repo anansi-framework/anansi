@@ -5,7 +5,7 @@ from anansi.ext.graphql import (
     ParseError,
     resolve_document,
 )
-from anansi.server import (
+from anansi.web import (
     error_response,
     make_context_from_request,
 )
