@@ -1,7 +1,7 @@
 """Define Postgres backend store.  Requires pip install anansi[postgres]."""
 from anansi import value_literal
 from anansi.utils import singlify
-from async_generator import asynccontextmanager
+from contextlib import asynccontextmanager
 from typing import Any, Union
 import asyncpg
 import logging
