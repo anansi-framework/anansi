@@ -14,7 +14,7 @@ def test_package_version():
     import re
     module = importlib.import_module(PACKAGE)
 
-    assert re.match('^\d+\.\d+\.(dev)?\d+$', module.__version__)
+    assert re.match('^\d+\.\d+\.(dev)?\d+$', module.__version__) is not None
 
 
 def test_all_modules_import():
