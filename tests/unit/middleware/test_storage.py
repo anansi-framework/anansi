@@ -163,25 +163,6 @@ async def test_storage_middleware_get_records(mock_storage, mocker):
 
 
 @pytest.mark.asyncio
-async def test_storage_middleware_make_store_value(mock_storage, mocker):
-    """Test deleting record from storage middleware."""
-    from anansi.actions import MakeStorageValue
-    from anansi.middleware.storage import storage_middleware
-
-    async def next_action(action):
-        return action
-
-    mock_next_action = MagicMock(side_effect=next_action)
-
-    value = {'id': 1}
-
-    handler = await storage_middleware(mock_next_action)
-    result = await handler(MakeStorageValue(value))
-    mock_next_action.assert_not_called()
-    assert result == value
-
-
-@pytest.mark.asyncio
 async def test_storage_middleware_save_record(mock_storage, mocker):
     """Test deleting record from storage middleware."""
     from anansi import Store, make_context

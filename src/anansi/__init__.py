@@ -12,7 +12,7 @@ except ImportError:  # pragma: no cover
     __minor__ = 0
     __revision__ = ''
     __hash__ = ''
-    __version__ = ''
+    __version__ = '0.0.0'
 
 from .core.abstract_storage import AbstractStorage  # noqa: F401
 from .core.collection import Collection  # noqa: F401

@@ -11,7 +11,7 @@ from anansi.core.context import (
 from anansi.core.query import Query
 from anansi.core.query_group import QueryGroup
 from anansi.utils import singlify
-from typing import Any, List, Type, Union
+from typing import Any, List, Type, Union, TYPE_CHECKING
 
 from .utils import (
     generate_arg_lists,
@@ -21,6 +21,9 @@ from .utils import (
     split_changes,
 )
 
+if TYPE_CHECKING:
+    import anansi
+
 
 class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
     """Define abstract SQL based backend."""
@@ -28,12 +31,12 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
     def __init__(
         self,
         *,
-        database: str='',
-        default_namespace: str='',
-        host: str='',
-        password: str='',
-        port: int=0,
-        username: str='',
+        database: str = '',
+        default_namespace: str = '',
+        host: str = '',
+        password: str = '',
+        port: int = 0,
+        username: str = '',
         **base_kwargs,
     ):
         super().__init__(**base_kwargs)
@@ -45,7 +48,11 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
         self.port = port
         self.username = username
 
-    async def create_record(self, record: 'Model', context: 'Context') -> dict:
+    async def create_record(
+        self,
+        record: 'anansi.Model',
+        context: 'anansi.Context',
+    ) -> dict:
         """Insert new record into the database."""
         changes, i18n_changes = split_changes(
             record.__schema__.fields,
@@ -72,8 +79,8 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
 
     async def create_i18n_record(
         self,
-        schema: 'Schema',
-        context: 'Context',
+        schema: 'anansi.Schema',
+        context: 'anansi.Context',
         changes: dict,
         i18n_changes: dict
     ) -> dict:
@@ -135,8 +142,8 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
 
     async def create_standard_record(
         self,
-        schema: 'Schema',
-        context: 'Context',
+        schema: 'anansi.Schema',
+        context: 'anansi.Context',
         changes: dict,
     ) -> dict:
         """Create a standard record in the database."""
@@ -175,13 +182,17 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
 
     async def delete_collection(
         self,
-        model: 'Model',
-        context: 'Context'
+        model: 'anansi.Model',
+        context: 'anansi.Context'
     ) -> int:
         """Delete collection of records from the database."""
         raise NotImplementedError
 
-    async def delete_record(self, record: 'Model', context: 'Context') -> int:
+    async def delete_record(
+        self,
+        record: 'anansi.Model',
+        context: 'anansi.Context',
+    ) -> int:
         """Delete record from database."""
         schema = record.__schema__
         keys = await record.get_key_dict(key_property='code')
@@ -242,16 +253,16 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
         self,
         sql: str,
         *args,
-        method: str='execute',
-        connection: Any=None,
+        method: str = 'execute',
+        connection: Any = None,
     ) -> bool:
         """Execute the given sql statement in this backend pool."""
         pass
 
     async def get_count(
         self,
-        model: Type['Model'],
-        context: 'Context'
+        model: Type['anansi.Model'],
+        context: 'anansi.Context'
     ) -> int:
         """Return number of records available for the given context."""
         count_context = make_context(
@@ -263,8 +274,8 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
 
     async def get_records(
         self,
-        model: Type['Model'],
-        context: 'Context'
+        model: Type['anansi.Model'],
+        context: 'anansi.Context'
     ) -> List[dict]:
         """Get records from the store based on the given context."""
         sql, values = await generate_select_statement(
@@ -284,20 +295,28 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
 
     async def save_collection(
         self,
-        collection: 'Collection',
-        context: 'Context'
+        collection: 'anansi.Collection',
+        context: 'anansi.Context'
     ) -> int:
         """Save a collection of records to the database."""
         pass
 
-    async def save_record(self, record: 'Model', context: 'Context') -> dict:
+    async def save_record(
+        self,
+        record: 'anansi.Model',
+        context: 'anansi.Context',
+    ) -> dict:
         """Save record to backend database."""
         if record.is_new:
             return await self.create_record(record, context)
         else:
             return await self.update_record(record, context)
 
-    async def update_record(self, record: 'Model', context: 'Context') -> dict:
+    async def update_record(
+        self,
+        record: 'anansi.Model',
+        context: 'anansi.Context',
+    ) -> dict:
         """Insert new record into the database."""
         changes, i18n_changes = split_changes(
             record.__schema__.fields,
@@ -319,8 +338,8 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
 
     async def update_i18n_record(
         self,
-        record: 'Model',
-        context: 'Context',
+        record: 'anansi.Model',
+        context: 'anansi.Context',
         changes: dict,
         i18n_changes: dict
     ) -> dict:
@@ -329,8 +348,8 @@ class AbstractSqlStorage(AbstractStorage, metaclass=ABCMeta):
 
     async def update_standard_record(
         self,
-        record: 'Model',
-        context: 'Context',
+        record: 'anansi.Model',
+        context: 'anansi.Context',
         changes: dict
     ) -> dict:
         """Create a standard record in the database."""

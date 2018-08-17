@@ -169,11 +169,14 @@ async def test_abstract_sql_create_i18n_record(mock_sql_storage, mocker):
         side_effect=execute,
     )
 
+    changes = {Content.__schema__.fields['code']: 'test'}
+    i18n_changes = {Content.__schema__.fields['title']: 'Test'}
+
     await mock_sql_storage.create_i18n_record(
         Content.__schema__,
         make_context(store=Store()),
-        {'code': 'test'},
-        {'title': 'Test'},
+        changes,
+        i18n_changes,
     )
 
     mock_execute.assert_called_with(

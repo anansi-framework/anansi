@@ -8,9 +8,12 @@ from anansi.core.context import (
 from anansi.core.field import Field
 from anansi.core.model import Model
 from anansi.core.query_group import QueryGroup
-from anansi.exceptions import StoreNotFound
+
 from collections import OrderedDict
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, List, Tuple, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import anansi
 
 I18N_PREFIX = 'i18n.'
 
@@ -18,10 +21,10 @@ I18N_PREFIX = 'i18n.'
 def generate_arg_lists(
     args: dict,
     *,
-    context: 'Context'=None,
-    field_key: str='code',
-    offset_index: int=0,
-    quote: Callable=None,
+    context: 'anansi.Context' = None,
+    field_key: str = 'code',
+    offset_index: int = 0,
+    quote: Callable = None,
 ) -> Tuple[List[str], List[str], List[Any]]:
     """Convert dictionary to key / value SQL lists."""
     column_sql = []
@@ -33,7 +36,12 @@ def generate_arg_lists(
         if hasattr(value, 'literal_value'):
             value_sql.append(str(value.literal_value))
         else:
-            out_value = field.dump_value(value, context=context)
+            try:
+                dump_value = getattr(value, 'dump_value')
+            except AttributeError:
+                out_value = value
+            else:
+                out_value = dump_value(value, context=context)
             out_values.append(out_value)
             value_sql.append('${}'.format(len(out_values) + offset_index))
 
@@ -43,10 +51,10 @@ def generate_arg_lists(
 def generate_arg_pairs(
     args: dict,
     *,
-    context: 'Context'=None,
-    field_key: str='code',
-    offset_index: int=0,
-    quote: Callable=None,
+    context: 'anansi.Context' = None,
+    field_key: str = 'code',
+    offset_index: int = 0,
+    quote: Callable = None,
 ) -> Tuple[List[str], List[Any]]:
     """Convert dictionary to key / value SQL pair."""
     column_sql, value_sql, out_values = generate_arg_lists(
@@ -63,9 +71,9 @@ def generate_arg_pairs(
 
 
 def generate_select_columns(
-    schema: 'Schema',
-    context: 'Context',
-    quote: Callable=None,
+    schema: 'anansi.Schema',
+    context: 'anansi.Context',
+    quote: Callable = None,
 ) -> Tuple[str, List['Field']]:
     """Generate field and sql column lists."""
     if context.returning == ReturnType.Count:
@@ -100,9 +108,9 @@ def generate_select_columns(
 
 
 def generate_select_distinct(
-    schema: 'Schema',
-    context: 'Context',
-    quote: Callable=None,
+    schema: 'anansi.Schema',
+    context: 'anansi.Context',
+    quote: Callable = None,
 ):
     """Generate distinct lookup for the context information."""
     if not context.distinct:
@@ -128,8 +136,8 @@ def generate_select_order(
     schema,
     context,
     *,
-    quote: Callable=None,
-    resolve_order: Callable=None,
+    quote: Callable = None,
+    resolve_order: Callable = None,
 ) -> str:
     """Genreate order by clause for select statement."""
     order_by = context.order_by
@@ -154,14 +162,14 @@ def generate_select_order(
 
 
 async def generate_select_query(
-    schema: 'Schema',
-    context: 'Context',
+    schema: 'anansi.Schema',
+    context: 'anansi.Context',
     *,
-    default_namespace: str='',
-    offset_index: int=0,
-    quote: Callable=None,
-    resolve_order: Callable=None,
-    resolve_query_op: Callable=None,
+    default_namespace: str = '',
+    offset_index: int = 0,
+    quote: Callable = None,
+    resolve_order: Callable = None,
+    resolve_query_op: Callable = None,
 ) -> Tuple[str, list]:
     """Generate a where query statement from the context."""
     where = context.where
@@ -222,13 +230,13 @@ async def generate_select_query(
 
 
 def generate_select_translation(
-    schema: 'Schema',
-    context: 'Context',
+    schema: 'anansi.Schema',
+    context: 'anansi.Context',
     fields: List['Field'],
     *,
-    namespace: str='',
-    offset_index: int=0,
-    quote: Callable=None,
+    namespace: str = '',
+    offset_index: int = 0,
+    quote: Callable = None,
 ) -> Tuple[str, list]:
     """Generate translation statement for select."""
     has_translations = any(
@@ -261,14 +269,14 @@ def generate_select_translation(
 
 
 async def generate_select_statement(
-    schema: 'Schema',
-    context: 'Context',
+    schema: 'anansi.Schema',
+    context: 'anansi.Context',
     *,
-    default_namespace: str=None,
-    offset_index: int=0,
-    quote: Callable=None,
-    resolve_order: Callable=None,
-    resolve_query_op: Callable=None,
+    default_namespace: str = None,
+    offset_index: int = 0,
+    quote: Callable = None,
+    resolve_order: Callable = None,
+    resolve_query_op: Callable = None,
 ) -> Tuple[str, list]:
     """Generate SQL selection statement."""
     values = []
@@ -331,15 +339,15 @@ async def generate_select_statement(
 
 
 async def make_store_value(
-    schema: 'Schema',
-    context: 'Context',
+    schema: 'anansi.Schema',
+    context: 'anansi.Context',
     value: Any,
     *,
-    default_namespace: str='',
-    offset_index: int=0,
-    quote: Callable=None,
-    resolve_order: Callable=None,
-    resolve_query_op: Callable=None,
+    default_namespace: str = '',
+    offset_index: int = 0,
+    quote: Callable = None,
+    resolve_order: Callable = None,
+    resolve_query_op: Callable = None,
 ) -> Tuple[str, list]:
     """Convert given value to a storable query value."""
     action_value = value

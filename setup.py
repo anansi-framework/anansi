@@ -81,14 +81,14 @@ class tag(Command):
         # generate the version information from the current git commit
         cmd = ['git', 'describe', '--match', 'v[0-9]*.[0-9]*.0']
         desc = subprocess.check_output(cmd).decode().strip()
-        result = re.match('v([0-9]+)\.([0-9]+)\.0-([0-9]+)-(.*)', desc)
+        result = re.match(r'v([0-9]+)\.([0-9]+)\.0-([0-9]+)-(.*)', desc)
 
         major, minor, revision, hash_ = result.groups()
 
         # determine branch name
         cmd = ['git', 'branch']
         branch = subprocess.check_output(cmd).decode().strip()
-        branch_type = re.search('\* ([a-z]*)', branch).group(1)
+        branch_type = re.search(r'\* ([a-z]*)', branch).group(1)
         release = '' if branch_type in ('release', 'master') else 'dev'
 
         version = '.'.join((major, minor, release + revision))
